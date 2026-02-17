@@ -169,12 +169,18 @@ export function Chat() {
                     </span>
                   </div>
                   <div className={`prose prose-sm max-w-none ${message.role === 'user' ? 'prose-invert' : 'dark:prose-invert'}`}>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    {message.metadata?.isStreaming ? (
+                      // Render plain text while streaming for speed
+                      <pre className="whitespace-pre-wrap font-sans">{message.content}</pre>
+                    ) : (
+                      // Render Markdown when complete
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               </div>

@@ -56,9 +56,15 @@ export function useChat(sessionId: string | null) {
         // Check if message already exists (from streaming)
         const existingIndex = prev.findIndex(m => m.id === message.id);
         if (existingIndex !== -1) {
-          // Update existing message
+          // Update existing message and clear streaming flag
           const updated = [...prev];
-          updated[existingIndex] = message;
+          updated[existingIndex] = {
+            ...message,
+            metadata: {
+              ...message.metadata,
+              isStreaming: false,
+            },
+          };
           return updated;
         }
         // Add new message
@@ -85,6 +91,10 @@ export function useChat(sessionId: string | null) {
           updated[existingIndex] = {
             ...updated[existingIndex],
             content: update.content,
+            metadata: {
+              ...updated[existingIndex].metadata,
+              isStreaming: !update.isComplete,
+            },
           };
           return updated;
         } else {
@@ -96,6 +106,9 @@ export function useChat(sessionId: string | null) {
             role: 'assistant',
             content: update.content,
             timestamp: new Date().toISOString(),
+            metadata: {
+              isStreaming: true,
+            },
           }];
         }
       });

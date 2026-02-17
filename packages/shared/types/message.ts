@@ -10,6 +10,7 @@ export interface Message {
     thinking?: boolean;
     toolUse?: string;
     error?: string;
+    isStreaming?: boolean;
   };
 }
 
