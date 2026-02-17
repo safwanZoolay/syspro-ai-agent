@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db/sqlite.js';
+import { db } from '../db/json-store.js';
 import { opcodeManager } from '../opencode.js';
 import { getWorkflow } from '../workflows/registry.js';
 

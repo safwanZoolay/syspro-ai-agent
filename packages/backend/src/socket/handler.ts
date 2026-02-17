@@ -1,6 +1,6 @@
 import type { Server as SocketServer, Socket } from 'socket.io';
 import { opcodeManager } from '../opencode.js';
-import { db } from '../db/sqlite.js';
+import { db } from '../db/json-store.js';
 import type { Message, StreamEvent, SessionActivity } from '@opencode-web-ui/shared';
 import { getWorkflow } from '../workflows/registry.js';
 
