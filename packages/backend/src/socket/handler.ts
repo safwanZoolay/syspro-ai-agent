@@ -154,15 +154,21 @@ export function setupSocketHandlers(io: SocketServer) {
                 });
                 io.to(sessionId).emit('activity', permissionActivity);
 
-                // Auto-approve permission
+                // Auto-approve permission using the correct SDK method
                 try {
-                  await client.permission.accept({
-                    path: { id: permissionId },
-                    body: {},
+                  await client.postSessionByIdPermissionsByPermissionId({
+                    path: {
+                      id: opcodeSessionId,
+                      permissionId: permissionId
+                    },
+                    body: {
+                      allow: true,  // Approve the permission
+                    },
                   });
                   console.log('✅ Permission auto-approved:', permissionId);
                 } catch (error) {
                   console.error('❌ Failed to approve permission:', error);
+                  console.error('Error details:', error);
                 }
               } else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
                 // Session status changes - check both event types
