@@ -27,10 +27,19 @@ class OpencodeManager {
       const npmPath = path.join(os.homedir(), 'AppData', 'Roaming', 'npm');
       const currentPath = process.env.PATH || '';
 
+      console.log(`🔍 Platform: ${process.platform}`);
+      console.log(`🔍 Home dir: ${os.homedir()}`);
+      console.log(`🔍 npm path: ${npmPath}`);
+      console.log(`🔍 Current PATH includes npm path: ${currentPath.includes(npmPath)}`);
+
       if (!currentPath.includes(npmPath)) {
         process.env.PATH = `${npmPath};${currentPath}`;
         console.log(`📁 Added npm global path to PATH: ${npmPath}`);
+      } else {
+        console.log(`✓ npm path already in PATH`);
       }
+
+      console.log(`🔍 Final PATH: ${process.env.PATH?.substring(0, 200)}...`);
     }
   }
 
