@@ -3,7 +3,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { opcodeManager } from './opencode.js';
-import { db } from './db/sqlite.js';
+import { db } from './db/json-store.js';
 import { initializeWorkflows } from './workflows/registry.js';
 import { setupSocketHandlers } from './socket/handler.js';
 import workflowsRouter from './routes/workflows.js';
