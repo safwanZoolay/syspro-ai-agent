@@ -161,12 +161,12 @@ export function setupSocketHandlers(io: SocketServer) {
                     {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ allow: true }),
+                      body: JSON.stringify({ response: 'always' }),
                     }
                   );
 
                   if (approvalResponse.ok) {
-                    console.log('✅ Permission auto-approved:', permissionId);
+                    console.log('✅ Permission auto-approved (always):', permissionId);
                   } else {
                     console.error('❌ Permission approval failed:', approvalResponse.status, await approvalResponse.text());
                   }
