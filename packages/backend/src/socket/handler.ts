@@ -71,6 +71,8 @@ export function setupSocketHandlers(io: SocketServer) {
         console.log('🤖 Sending to OpenCode session:', opcodeSessionId);
         // Send prompt to OpenCode and get response
         const client = opcodeManager.getClient();
+
+        console.log('📡 Calling OpenCode API...');
         const response = await client.session.prompt({
           path: { id: opcodeSessionId },
           body: {
@@ -78,8 +80,12 @@ export function setupSocketHandlers(io: SocketServer) {
           },
         });
 
+        console.log('✅ Got response from OpenCode:', { status: response.response?.status, hasData: !!response.data });
+        console.log('📦 Response data:', JSON.stringify(response.data, null, 2));
+
         // Extract assistant response from messages
         const assistantContent = extractResponseContent(response);
+        console.log('📝 Extracted content length:', assistantContent.length);
 
         // Save assistant message
         const assistantMessage = db.createMessage({
@@ -106,7 +112,8 @@ export function setupSocketHandlers(io: SocketServer) {
           updatedAt: new Date().toISOString(),
         });
       } catch (error: any) {
-        console.error('Error handling chat message:', error);
+        console.error('❌ Error handling chat message:', error);
+        console.error('Error stack:', error.stack);
         socket.emit('error', {
           message: error.message || 'Failed to process message',
         });
