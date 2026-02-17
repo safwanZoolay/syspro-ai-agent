@@ -89,41 +89,50 @@ export function setupSocketHandlers(io: SocketServer) {
             console.log('✅ Subscribed to events');
 
             for await (const event of events.stream) {
-              console.log('📨 Event:', event.type, event.properties);
+              const eventData = event as any;
+              console.log('📨 Event:', eventData.type);
 
-              // Handle different event types
-              if (event.type === 'message_start' || event.type === 'content_block_start') {
-                // Message/content block starting
-                continue;
-              } else if (event.type === 'content_block_delta') {
-                // Text streaming - append to content
-                const delta = (event.properties as any)?.delta;
-                if (delta?.type === 'text_delta' && delta.text) {
-                  streamedContent += delta.text;
+              // Handle different event types based on OpenCode SDK structure
+              if (eventData.type === 'message.part.delta') {
+                // Text streaming - this is the actual text coming through!
+                if (eventData.field === 'text' && eventData.delta) {
+                  streamedContent += eventData.delta;
                   db.updateMessage(assistantMessage.id, { content: streamedContent });
 
-                  // Emit streaming update
+                  // Emit streaming update to frontend
                   io.to(sessionId).emit('message_update', {
                     messageId: assistantMessage.id,
                     content: streamedContent,
                     isComplete: false,
                   });
+                  console.log('📤 Streamed:', eventData.delta);
                 }
-              } else if (event.type === 'tool_use') {
-                // Tool usage
-                const toolName = (event.properties as any)?.name || 'unknown';
-                const toolActivity = db.createActivity({
-                  sessionId,
-                  type: 'tool_use',
-                  description: `Using tool: ${toolName}`,
-                  timestamp: new Date().toISOString(),
-                  data: event.properties,
-                });
-                io.to(sessionId).emit('activity', toolActivity);
-              } else if (event.type === 'message_stop') {
-                // Message complete
-                console.log('✅ Message complete via event stream');
-                break;
+              } else if (eventData.type === 'message.part.updated') {
+                // Tool usage or part updates
+                const part = eventData.part;
+                if (part?.type === 'tool' && part.tool) {
+                  const toolName = part.tool;
+                  const status = part.state?.status;
+
+                  if (status === 'running' || status === 'pending') {
+                    const toolActivity = db.createActivity({
+                      sessionId,
+                      type: 'tool_use',
+                      description: `Using tool: ${toolName}`,
+                      timestamp: new Date().toISOString(),
+                      data: part,
+                    });
+                    io.to(sessionId).emit('activity', toolActivity);
+                    console.log('🔧 Tool:', toolName, status);
+                  }
+                }
+              } else if (eventData.type === 'session.status') {
+                // Session status changes
+                const status = eventData.status?.type;
+                if (status === 'idle') {
+                  console.log('✅ Session idle - message complete');
+                  break;
+                }
               }
             }
           } catch (error) {
