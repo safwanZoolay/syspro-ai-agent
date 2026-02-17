@@ -65,16 +65,19 @@ export function Home() {
           <div className="container mx-auto px-4 py-12 max-w-7xl">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Sparkles className="w-7 h-7 text-white" />
-                  </div>
+                <div className="flex items-center gap-4 mb-3">
+                  <img
+                    src="/syspro-logo.svg"
+                    alt="SYSPRO"
+                    className="h-12 w-auto"
+                  />
+                  <div className="h-12 w-px bg-primary/30" />
                   <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                    SYSPRO AI Agent
+                    Pulse
                   </h1>
                 </div>
-                <p className="text-lg text-muted-foreground ml-15">
-                  Smarter. Faster. Built for Your Industry.
+                <p className="text-lg text-muted-foreground ml-1">
+                  Real-time AI workflow automation
                 </p>
               </div>
 

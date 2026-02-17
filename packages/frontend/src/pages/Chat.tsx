@@ -73,9 +73,13 @@ export function Chat() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary" />
+          <div className="relative mb-4">
+            <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <img
+              src="/syspro-logo.svg"
+              alt="SYSPRO"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-auto opacity-50"
+            />
           </div>
           <p className="text-muted-foreground">Loading session...</p>
         </div>
@@ -99,9 +103,12 @@ export function Chat() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
+              <img
+                src="/syspro-logo.svg"
+                alt="SYSPRO"
+                className="h-8 w-auto"
+              />
+              <div className="h-8 w-px bg-primary/30" />
               <div>
                 <h2 className="font-semibold text-lg">{session.title}</h2>
                 <p className="text-sm text-muted-foreground">
@@ -127,8 +134,12 @@ export function Chat() {
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Sparkles className="w-10 h-10 text-primary" />
+                <div className="w-32 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-4">
+                  <img
+                    src="/syspro-logo.svg"
+                    alt="SYSPRO Pulse"
+                    className="w-full h-auto"
+                  />
                 </div>
                 <p className="text-xl font-semibold mb-2">Ready to assist!</p>
                 <p className="text-muted-foreground">Start the conversation below.</p>

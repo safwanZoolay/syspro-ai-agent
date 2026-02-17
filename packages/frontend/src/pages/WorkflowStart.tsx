@@ -64,9 +64,16 @@ export function WorkflowStart() {
 
   if (!workflow) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <div className="text-center">
-          <div className="text-2xl mb-2">🤖</div>
+          <div className="relative mb-4">
+            <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <img
+              src="/syspro-logo.svg"
+              alt="SYSPRO"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-auto opacity-50"
+            />
+          </div>
           <p className="text-muted-foreground">Loading workflow...</p>
         </div>
       </div>
@@ -74,7 +81,7 @@ export function WorkflowStart() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Button
           variant="ghost"
