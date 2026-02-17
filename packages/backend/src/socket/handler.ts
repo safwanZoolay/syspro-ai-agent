@@ -101,8 +101,10 @@ export function setupSocketHandlers(io: SocketServer) {
               // Handle different event types based on OpenCode SDK structure
               if (eventData.type === 'message.part.delta') {
                 // Text streaming - this is the actual text coming through!
-                if (eventData.field === 'text' && eventData.delta) {
-                  streamedContent += eventData.delta;
+                // Data is nested inside 'properties'
+                const props = eventData.properties || eventData;
+                if (props.field === 'text' && props.delta) {
+                  streamedContent += props.delta;
                   db.updateMessage(assistantMessage.id, { content: streamedContent });
 
                   // Emit streaming update to frontend
@@ -111,11 +113,13 @@ export function setupSocketHandlers(io: SocketServer) {
                     content: streamedContent,
                     isComplete: false,
                   });
-                  console.log('📤 Streamed:', eventData.delta);
+                  console.log('📤 Streamed:', props.delta);
                 }
               } else if (eventData.type === 'message.part.updated') {
                 // Tool usage or part updates
-                const part = eventData.part;
+                // Data is nested inside 'properties'
+                const props = eventData.properties || eventData;
+                const part = props.part;
                 if (part?.type === 'tool' && part.tool) {
                   const toolName = part.tool;
                   const status = part.state?.status;
