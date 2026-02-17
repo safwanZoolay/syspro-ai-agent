@@ -52,7 +52,8 @@ export function setupSocketHandlers(io: SocketServer) {
 
         const opcodeSessionId = session.metadata?.opcodeSessionId;
         if (!opcodeSessionId) {
-          throw new Error('OpenCode session not initialized');
+          console.error('Session missing opcodeSessionId:', session);
+          throw new Error('OpenCode session not initialized. Please start a new session from the home page.');
         }
 
         // Log activity
