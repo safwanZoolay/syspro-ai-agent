@@ -154,21 +154,24 @@ export function setupSocketHandlers(io: SocketServer) {
                 });
                 io.to(sessionId).emit('activity', permissionActivity);
 
-                // Auto-approve permission using the correct SDK method
+                // Auto-approve permission using direct HTTP call
                 try {
-                  await client.postSessionByIdPermissionsByPermissionId({
-                    path: {
-                      id: opcodeSessionId,
-                      permissionId: permissionId
-                    },
-                    body: {
-                      allow: true,  // Approve the permission
-                    },
-                  });
-                  console.log('✅ Permission auto-approved:', permissionId);
+                  const approvalResponse = await fetch(
+                    `http://127.0.0.1:4096/session/${opcodeSessionId}/permissions/${permissionId}`,
+                    {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ allow: true }),
+                    }
+                  );
+
+                  if (approvalResponse.ok) {
+                    console.log('✅ Permission auto-approved:', permissionId);
+                  } else {
+                    console.error('❌ Permission approval failed:', approvalResponse.status, await approvalResponse.text());
+                  }
                 } catch (error) {
                   console.error('❌ Failed to approve permission:', error);
-                  console.error('Error details:', error);
                 }
               } else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
                 // Session status changes - check both event types
