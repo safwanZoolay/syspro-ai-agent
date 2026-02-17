@@ -1,5 +1,7 @@
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk';
 import type { OpencodeClient } from '@opencode-ai/sdk';
+import * as os from 'os';
+import * as path from 'path';
 
 class OpencodeManager {
   private static instance: OpencodeManager;
@@ -7,13 +9,29 @@ class OpencodeManager {
   private server: { url: string; close: () => void } | null = null;
   private isInitialized = false;
 
-  private constructor() {}
+  private constructor() {
+    // Ensure OpenCode is in PATH on Windows
+    this.ensureOpenCodeInPath();
+  }
 
   static getInstance(): OpencodeManager {
     if (!OpencodeManager.instance) {
       OpencodeManager.instance = new OpencodeManager();
     }
     return OpencodeManager.instance;
+  }
+
+  private ensureOpenCodeInPath() {
+    // On Windows, npm global binaries are often in %APPDATA%\npm
+    if (process.platform === 'win32') {
+      const npmPath = path.join(os.homedir(), 'AppData', 'Roaming', 'npm');
+      const currentPath = process.env.PATH || '';
+
+      if (!currentPath.includes(npmPath)) {
+        process.env.PATH = `${npmPath};${currentPath}`;
+        console.log(`📁 Added npm global path to PATH: ${npmPath}`);
+      }
+    }
   }
 
   async initialize() {
