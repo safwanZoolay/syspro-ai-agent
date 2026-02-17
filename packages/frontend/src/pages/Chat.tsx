@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,30 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 
+// Fun loading messages inspired by OpenCode
+const THINKING_MESSAGES = [
+  'Thinking...',
+  'Pondering...',
+  'Contemplating...',
+  'Processing...',
+  'Computing...',
+  'Analyzing...',
+  'Cogitating...',
+  'Deliberating...',
+  'Mulling it over...',
+  'Crunching numbers...',
+  'Consulting the oracles...',
+  'Invoking the spirits...',
+  'Summoning wisdom...',
+  'Decoding the matrix...',
+  'Brewing ideas...',
+  'Forging thoughts...',
+  'Smooshing concepts...',
+  'Wrangling data...',
+  'Untangling complexity...',
+  'Channeling creativity...',
+];
+
 export function Chat() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -20,6 +44,12 @@ export function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { messages, sendMessage, isLoading, connected } = useChat(sessionId || null);
+
+  // Pick a random thinking message when loading starts
+  const thinkingMessage = useMemo(
+    () => THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)],
+    [isLoading]
+  );
 
   useEffect(() => {
     if (sessionId) {
@@ -195,7 +225,7 @@ export function Chat() {
               <div className="bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl rounded-bl-sm">
                 <div className="p-4 flex items-center gap-3">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-sm">Agent is thinking...</span>
+                  <span className="text-sm">{thinkingMessage}</span>
                 </div>
               </div>
             </div>
