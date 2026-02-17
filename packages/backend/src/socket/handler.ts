@@ -90,7 +90,13 @@ export function setupSocketHandlers(io: SocketServer) {
 
             for await (const event of events.stream) {
               const eventData = event as any;
-              console.log('📨 Event:', eventData.type);
+
+              // Log full event for debugging
+              if (eventData.type === 'message.part.delta' || eventData.type === 'message.part.updated') {
+                console.log('📨 Event:', eventData.type, JSON.stringify(eventData, null, 2));
+              } else {
+                console.log('📨 Event:', eventData.type);
+              }
 
               // Handle different event types based on OpenCode SDK structure
               if (eventData.type === 'message.part.delta') {
