@@ -7,11 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"backend,frontend\" --prefix-colors \"blue,magenta\"",
     "dev:backend": "npm run dev -w packages/backend",
     "dev:frontend": "npm run dev -w packages/frontend",
     "build": "npm run build --workspaces --if-present",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
   "keywords": ["opencode", "ai", "agent", "web-ui"],
   "author": "",
