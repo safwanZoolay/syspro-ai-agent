@@ -1,5 +1,11 @@
-import { createOpencode } from '@opencode-ai/sdk';
-import type { Opencode } from '@opencode-ai/sdk';
+// Stub implementation for OpenCode - can be replaced with real SDK later
+interface OpencodeClient {
+  // Add client methods as needed
+}
+
+interface Opencode {
+  client: OpencodeClient;
+}
 
 class OpencodeManager {
   private static instance: OpencodeManager;
@@ -20,25 +26,17 @@ class OpencodeManager {
       return this.opencode!;
     }
 
-    console.log('🚀 Initializing OpenCode server...');
+    console.log('⚠️  OpenCode integration is stubbed (install @opencode-ai/sdk for full functionality)');
 
-    try {
-      this.opencode = await createOpencode({
-        port: 4096,
-        timeout: 10000,
-        config: {
-          model: 'anthropic/claude-3-5-sonnet-20241022',
-        },
-      });
+    // Create a stub opencode instance
+    this.opencode = {
+      client: {} as OpencodeClient,
+    };
 
-      this.isInitialized = true;
-      console.log('✅ OpenCode server initialized on port 4096');
+    this.isInitialized = true;
+    console.log('✅ OpenCode stub initialized');
 
-      return this.opencode;
-    } catch (error) {
-      console.error('❌ Failed to initialize OpenCode server:', error);
-      throw error;
-    }
+    return this.opencode;
   }
 
   getClient() {
@@ -50,8 +48,7 @@ class OpencodeManager {
 
   async shutdown() {
     if (this.opencode) {
-      console.log('🛑 Shutting down OpenCode server...');
-      // OpenCode SDK handles cleanup automatically
+      console.log('🛑 Shutting down OpenCode stub...');
       this.opencode = null;
       this.isInitialized = false;
     }
