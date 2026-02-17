@@ -51,6 +51,7 @@ export function useChat(sessionId: string | null) {
 
     // Listen for new messages
     socket.on('message', (message: Message) => {
+      console.log('📨 Frontend received message:', message.id, message.role, message.content.substring(0, 50));
       setMessages((prev) => {
         // Check if message already exists (from streaming)
         const existingIndex = prev.findIndex(m => m.id === message.id);
@@ -68,8 +69,16 @@ export function useChat(sessionId: string | null) {
 
     // Listen for message updates (streaming)
     socket.on('message_update', (update: { messageId: string; content: string; isComplete: boolean }) => {
+      console.log('📨 Frontend received message_update:', {
+        messageId: update.messageId,
+        contentLength: update.content.length,
+        isComplete: update.isComplete
+      });
+
       setMessages((prev) => {
         const existingIndex = prev.findIndex(m => m.id === update.messageId);
+        console.log('📝 Updating message, exists:', existingIndex !== -1, 'current messages:', prev.length);
+
         if (existingIndex !== -1) {
           // Update existing message content
           const updated = [...prev];
@@ -80,6 +89,7 @@ export function useChat(sessionId: string | null) {
           return updated;
         } else {
           // Create new message for streaming
+          console.log('✨ Creating new streaming message');
           return [...prev, {
             id: update.messageId,
             sessionId: sessionId!,
@@ -98,6 +108,7 @@ export function useChat(sessionId: string | null) {
 
     // Listen for activities
     socket.on('activity', (activity: SessionActivity) => {
+      console.log('📨 Frontend received activity:', activity.type, activity.description);
       setActivities((prev) => [...prev, activity]);
     });
 
