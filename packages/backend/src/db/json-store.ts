@@ -128,6 +128,17 @@ class JSONDatabaseManager {
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 
+  updateMessage(id: string, updates: Partial<Message>) {
+    const index = this.data.messages.findIndex((m) => m.id === id);
+    if (index !== -1) {
+      this.data.messages[index] = {
+        ...this.data.messages[index],
+        ...updates,
+      };
+      this.saveMessages();
+    }
+  }
+
   // Activity operations
   createActivity(activity: Omit<SessionActivity, 'id'>): SessionActivity {
     const id = `activity_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;

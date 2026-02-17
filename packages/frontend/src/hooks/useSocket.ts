@@ -51,8 +51,49 @@ export function useChat(sessionId: string | null) {
 
     // Listen for new messages
     socket.on('message', (message: Message) => {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // Check if message already exists (from streaming)
+        const existingIndex = prev.findIndex(m => m.id === message.id);
+        if (existingIndex !== -1) {
+          // Update existing message
+          const updated = [...prev];
+          updated[existingIndex] = message;
+          return updated;
+        }
+        // Add new message
+        return [...prev, message];
+      });
       setIsLoading(false);
+    });
+
+    // Listen for message updates (streaming)
+    socket.on('message_update', (update: { messageId: string; content: string; isComplete: boolean }) => {
+      setMessages((prev) => {
+        const existingIndex = prev.findIndex(m => m.id === update.messageId);
+        if (existingIndex !== -1) {
+          // Update existing message content
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            content: update.content,
+          };
+          return updated;
+        } else {
+          // Create new message for streaming
+          return [...prev, {
+            id: update.messageId,
+            sessionId: sessionId!,
+            role: 'assistant',
+            content: update.content,
+            timestamp: new Date().toISOString(),
+          }];
+        }
+      });
+
+      // Keep loading state if not complete
+      if (update.isComplete) {
+        setIsLoading(false);
+      }
     });
 
     // Listen for activities
@@ -69,6 +110,7 @@ export function useChat(sessionId: string | null) {
     return () => {
       socket.off('session_history');
       socket.off('message');
+      socket.off('message_update');
       socket.off('activity');
       socket.off('error');
     };

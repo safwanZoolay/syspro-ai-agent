@@ -69,32 +69,116 @@ export function setupSocketHandlers(io: SocketServer) {
         io.to(sessionId).emit('activity', activity);
 
         console.log('🤖 Sending to OpenCode session:', opcodeSessionId);
-        // Send prompt to OpenCode and get response
+        // Send prompt to OpenCode with streaming
         const client = opcodeManager.getClient();
 
-        console.log('📡 Calling OpenCode API...');
-        const response = await client.session.prompt({
-          path: { id: opcodeSessionId },
-          body: {
-            parts: [{ type: 'text', text: content }],
-          },
-        });
+        console.log('📡 Starting OpenCode stream...');
 
-        console.log('✅ Got response from OpenCode:', { status: response.response?.status, hasData: !!response.data });
-        console.log('📦 Response data:', JSON.stringify(response.data, null, 2));
-
-        // Extract assistant response from messages
-        const assistantContent = extractResponseContent(response);
-        console.log('📝 Extracted content length:', assistantContent.length);
-
-        // Save assistant message
-        const assistantMessage = db.createMessage({
+        // Create a placeholder message for streaming updates
+        let streamedContent = '';
+        let assistantMessage = db.createMessage({
           sessionId,
           role: 'assistant',
-          content: assistantContent,
+          content: '',
           timestamp: new Date().toISOString(),
         });
 
+        // Use streaming endpoint
+        const response = await fetch(`http://127.0.0.1:4096/session/${opcodeSessionId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            parts: [{ type: 'text', text: content }],
+            stream: true,
+          }),
+        });
+
+        if (!response.ok || !response.body) {
+          throw new Error('Failed to start OpenCode stream');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+
+                try {
+                  const event = JSON.parse(data);
+                  console.log('📨 Stream event:', event.type);
+
+                  // Handle different event types
+                  if (event.type === 'text') {
+                    streamedContent += event.text;
+                    assistantMessage.content = streamedContent;
+
+                    // Update message in DB
+                    db.updateMessage(assistantMessage.id, { content: streamedContent });
+
+                    // Emit partial update to client
+                    io.to(sessionId).emit('message_update', {
+                      messageId: assistantMessage.id,
+                      content: streamedContent,
+                      isComplete: false,
+                    });
+                  } else if (event.type === 'thinking') {
+                    // Show thinking activity
+                    const thinkActivity = db.createActivity({
+                      sessionId,
+                      type: 'thinking',
+                      description: event.text || 'Thinking...',
+                      timestamp: new Date().toISOString(),
+                    });
+                    io.to(sessionId).emit('activity', thinkActivity);
+                  } else if (event.type === 'tool_use') {
+                    // Show tool usage
+                    const toolActivity = db.createActivity({
+                      sessionId,
+                      type: 'tool_use',
+                      description: `Using tool: ${event.tool_name}`,
+                      timestamp: new Date().toISOString(),
+                      data: event,
+                    });
+                    io.to(sessionId).emit('activity', toolActivity);
+                  }
+                } catch (e) {
+                  console.error('Error parsing stream event:', e);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        console.log('✅ Stream complete, total length:', streamedContent.length);
+
+        // If streaming failed or no content, fallback to regular prompt
+        if (!streamedContent) {
+          console.log('⚠️ No streamed content, using fallback...');
+          const fallbackResponse = await client.session.prompt({
+            path: { id: opcodeSessionId },
+            body: {
+              parts: [{ type: 'text', text: content }],
+            },
+          });
+
+          streamedContent = extractResponseContent(fallbackResponse);
+          assistantMessage.content = streamedContent;
+          db.updateMessage(assistantMessage.id, { content: streamedContent });
+        }
+
+        // Emit final complete message
         io.to(sessionId).emit('message', assistantMessage);
 
         // Log completion activity
