@@ -1,3 +1,3 @@
-export * from './workflow.js';
-export * from './message.js';
-export * from './session.js';
+export * from './workflow';
+export * from './message';
+export * from './session';

@@ -54,9 +54,13 @@ router.post('/', async (req, res) => {
       },
     });
 
+    if (!opcodeSession.data?.id) {
+      throw new Error('Failed to create OpenCode session');
+    }
+
     // Build and inject system prompt
     const systemPrompt = workflow.buildSystemPrompt(inputs || {});
-    await client.session.prompt({
+    await client.session.promptAsync({
       path: { id: opcodeSession.data.id },
       body: {
         parts: [{ type: 'text', text: systemPrompt }],

@@ -65,7 +65,7 @@ export function setupSocketHandlers(io: SocketServer) {
 
         io.to(sessionId).emit('activity', activity);
 
-        // Send prompt to OpenCode
+        // Send prompt to OpenCode and get response
         const client = opcodeManager.getClient();
         const response = await client.session.prompt({
           path: { id: opcodeSessionId },
@@ -74,7 +74,7 @@ export function setupSocketHandlers(io: SocketServer) {
           },
         });
 
-        // Extract assistant response
+        // Extract assistant response from messages
         const assistantContent = extractResponseContent(response);
 
         // Save assistant message
@@ -119,24 +119,40 @@ export function setupSocketHandlers(io: SocketServer) {
 // Helper to extract content from OpenCode response
 function extractResponseContent(response: any): string {
   try {
-    // OpenCode API returns response in different formats
-    // Adjust this based on actual API response structure
-    if (response.data?.parts) {
-      const textParts = response.data.parts
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text);
-      return textParts.join('\n');
+    // OpenCode SDK returns messages array with content
+    if (response.data?.messages && Array.isArray(response.data.messages)) {
+      // Get the last assistant message
+      const assistantMessages = response.data.messages.filter(
+        (msg: any) => msg.role === 'assistant'
+      );
+
+      if (assistantMessages.length > 0) {
+        const lastMessage = assistantMessages[assistantMessages.length - 1];
+
+        // Extract text from content blocks
+        if (Array.isArray(lastMessage.content)) {
+          const textBlocks = lastMessage.content
+            .filter((block: any) => block.type === 'text')
+            .map((block: any) => block.text);
+          return textBlocks.join('\n\n');
+        }
+
+        // Handle direct string content
+        if (typeof lastMessage.content === 'string') {
+          return lastMessage.content;
+        }
+      }
     }
 
+    // Fallback: try to extract any text we can find
     if (response.data?.content) {
-      return response.data.content;
+      return typeof response.data.content === 'string'
+        ? response.data.content
+        : JSON.stringify(response.data.content, null, 2);
     }
 
-    if (typeof response.data === 'string') {
-      return response.data;
-    }
-
-    return JSON.stringify(response.data, null, 2);
+    console.warn('Unexpected response format:', response);
+    return 'Received response but could not extract content';
   } catch (error) {
     console.error('Error extracting response content:', error);
     return 'Error: Could not parse response';

@@ -1,41 +1,11 @@
-// Stub implementation for OpenCode - can be replaced with real SDK later
-interface OpencodeSession {
-  data: {
-    id: string;
-    title?: string;
-  };
-}
-
-interface OpencodePromptResponse {
-  data: {
-    parts?: Array<{ type: string; text: string }>;
-    content?: string;
-  };
-}
-
-interface OpencodeClient {
-  session: {
-    create: (params: { body: { title: string } }) => Promise<OpencodeSession>;
-    prompt: (params: {
-      path: { id: string };
-      body: {
-        parts: Array<{ type: string; text: string }>;
-        noReply?: boolean;
-      };
-    }) => Promise<OpencodePromptResponse>;
-    delete: (params: { path: { id: string } }) => Promise<void>;
-  };
-}
-
-interface Opencode {
-  client: OpencodeClient;
-}
+import { createOpencode } from '@opencode-ai/sdk';
+import type { OpencodeClient } from '@opencode-ai/sdk';
 
 class OpencodeManager {
   private static instance: OpencodeManager;
-  private opencode: Opencode | null = null;
+  private client: OpencodeClient | null = null;
+  private server: { url: string; close: () => void } | null = null;
   private isInitialized = false;
-  private sessionCounter = 0;
 
   private constructor() {}
 
@@ -47,65 +17,53 @@ class OpencodeManager {
   }
 
   async initialize() {
-    if (this.isInitialized) {
-      return this.opencode!;
+    if (this.isInitialized && this.client) {
+      return this.client;
     }
 
-    console.log('⚠️  OpenCode integration is stubbed (install @opencode-ai/sdk for full functionality)');
+    try {
+      console.log('🚀 Initializing OpenCode SDK...');
 
-    // Create a stub opencode instance with mock client methods
-    this.opencode = {
-      client: {
-        session: {
-          create: async (params) => {
-            this.sessionCounter++;
-            return {
-              data: {
-                id: `stub_session_${this.sessionCounter}`,
-                title: params.body.title,
-              },
-            };
-          },
-          prompt: async (params) => {
-            // Mock response
-            const userPrompt = params.body.parts[0]?.text || '';
-            return {
-              data: {
-                parts: [
-                  {
-                    type: 'text',
-                    text: `[OpenCode Stub] This is a mock response. OpenCode SDK is not installed.\n\nYour message was: "${userPrompt}"\n\nTo enable full AI functionality, install @opencode-ai/sdk.`,
-                  },
-                ],
-              },
-            };
-          },
-          delete: async (params) => {
-            console.log(`[Stub] Deleted session: ${params.path.id}`);
-          },
-        },
-      },
-    };
+      // Create OpenCode instance with server
+      const { client, server } = await createOpencode({
+        // Server options can be configured here if needed
+      });
 
-    this.isInitialized = true;
-    console.log('✅ OpenCode stub initialized');
+      this.client = client;
+      this.server = server;
+      this.isInitialized = true;
 
-    return this.opencode;
+      console.log(`✅ OpenCode SDK initialized`);
+      console.log(`🌐 OpenCode server running at: ${server.url}`);
+
+      return this.client;
+    } catch (error: any) {
+      console.error('❌ Failed to initialize OpenCode SDK:', error);
+      throw new Error(`OpenCode initialization failed: ${error.message}`);
+    }
   }
 
-  getClient() {
-    if (!this.isInitialized || !this.opencode) {
+  getClient(): OpencodeClient {
+    if (!this.isInitialized || !this.client) {
       throw new Error('OpenCode not initialized. Call initialize() first.');
     }
-    return this.opencode.client;
+    return this.client;
+  }
+
+  getServerUrl(): string | null {
+    return this.server?.url || null;
   }
 
   async shutdown() {
-    if (this.opencode) {
-      console.log('🛑 Shutting down OpenCode stub...');
-      this.opencode = null;
-      this.isInitialized = false;
+    if (this.server) {
+      console.log('🛑 Shutting down OpenCode server...');
+      this.server.close();
+      this.server = null;
     }
+
+    this.client = null;
+    this.isInitialized = false;
+    console.log('✅ OpenCode shutdown complete');
   }
 }
 
