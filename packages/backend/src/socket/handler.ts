@@ -136,6 +136,34 @@ export function setupSocketHandlers(io: SocketServer) {
                     console.log('🔧 Tool:', toolName, status);
                   }
                 }
+              } else if (eventData.type === 'permission.asked') {
+                // Permission request - auto-approve for now
+                const props = eventData.properties || eventData;
+                const permissionId = props.id;
+                const permission = props.permission;
+                const patterns = props.patterns || [];
+
+                console.log('🔐 Permission requested:', permission, patterns);
+
+                // Notify frontend
+                const permissionActivity = db.createActivity({
+                  sessionId,
+                  type: 'tool_use',
+                  description: `Permission requested: ${permission} for ${patterns.join(', ')}`,
+                  timestamp: new Date().toISOString(),
+                });
+                io.to(sessionId).emit('activity', permissionActivity);
+
+                // Auto-approve permission
+                try {
+                  await client.permission.accept({
+                    path: { id: permissionId },
+                    body: {},
+                  });
+                  console.log('✅ Permission auto-approved:', permissionId);
+                } catch (error) {
+                  console.error('❌ Failed to approve permission:', error);
+                }
               } else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
                 // Session status changes - check both event types
                 const status = eventData.properties?.status?.type || eventData.status?.type;
