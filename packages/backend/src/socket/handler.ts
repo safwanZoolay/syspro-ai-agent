@@ -130,9 +130,26 @@ export function setupSocketHandlers(io: SocketServer) {
 // Helper to extract content from OpenCode response
 function extractResponseContent(response: any): string {
   try {
-    // OpenCode SDK returns messages array with content
+    // OpenCode SDK returns parts array with content
+    if (response.data?.parts && Array.isArray(response.data.parts)) {
+      console.log('🔍 Found parts array, length:', response.data.parts.length);
+
+      // Extract text from all text parts
+      const textBlocks = response.data.parts
+        .filter((part: any) => {
+          console.log('  Part type:', part.type);
+          return part.type === 'text';
+        })
+        .map((part: any) => part.text);
+
+      if (textBlocks.length > 0) {
+        console.log('✅ Extracted', textBlocks.length, 'text blocks');
+        return textBlocks.join('\n\n');
+      }
+    }
+
+    // Legacy format: OpenCode SDK returns messages array with content
     if (response.data?.messages && Array.isArray(response.data.messages)) {
-      // Get the last assistant message
       const assistantMessages = response.data.messages.filter(
         (msg: any) => msg.role === 'assistant'
       );
@@ -140,7 +157,6 @@ function extractResponseContent(response: any): string {
       if (assistantMessages.length > 0) {
         const lastMessage = assistantMessages[assistantMessages.length - 1];
 
-        // Extract text from content blocks
         if (Array.isArray(lastMessage.content)) {
           const textBlocks = lastMessage.content
             .filter((block: any) => block.type === 'text')
@@ -148,7 +164,6 @@ function extractResponseContent(response: any): string {
           return textBlocks.join('\n\n');
         }
 
-        // Handle direct string content
         if (typeof lastMessage.content === 'string') {
           return lastMessage.content;
         }
@@ -162,10 +177,10 @@ function extractResponseContent(response: any): string {
         : JSON.stringify(response.data.content, null, 2);
     }
 
-    console.warn('Unexpected response format:', response);
+    console.warn('⚠️ Unexpected response format:', JSON.stringify(response.data, null, 2));
     return 'Received response but could not extract content';
   } catch (error) {
-    console.error('Error extracting response content:', error);
+    console.error('❌ Error extracting response content:', error);
     return 'Error: Could not parse response';
   }
 }
