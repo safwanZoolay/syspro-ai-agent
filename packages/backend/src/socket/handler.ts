@@ -30,6 +30,7 @@ export function setupSocketHandlers(io: SocketServer) {
 
     // Handle chat messages
     socket.on('chat_message', async (data: ChatMessage) => {
+      console.log('💬 Received chat_message:', { sessionId: data.sessionId, content: data.content?.substring(0, 50) });
       try {
         const { sessionId, content } = data;
 
@@ -41,6 +42,7 @@ export function setupSocketHandlers(io: SocketServer) {
           timestamp: new Date().toISOString(),
         });
 
+        console.log('📤 Broadcasting user message to session:', sessionId);
         // Broadcast to all clients in the session
         io.to(sessionId).emit('message', userMessage);
 
@@ -66,6 +68,7 @@ export function setupSocketHandlers(io: SocketServer) {
 
         io.to(sessionId).emit('activity', activity);
 
+        console.log('🤖 Sending to OpenCode session:', opcodeSessionId);
         // Send prompt to OpenCode and get response
         const client = opcodeManager.getClient();
         const response = await client.session.prompt({
