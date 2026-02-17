@@ -170,8 +170,11 @@ export function Chat() {
                   </div>
                   <div className={`prose prose-sm max-w-none ${message.role === 'user' ? 'prose-invert' : 'dark:prose-invert'}`}>
                     {message.metadata?.isStreaming ? (
-                      // Render plain text while streaming for speed
-                      <pre className="whitespace-pre-wrap font-sans">{message.content}</pre>
+                      // Render plain text while streaming for speed - preserve whitespace but use normal font
+                      <div className="whitespace-pre-wrap break-words">
+                        {message.content}
+                        <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse"></span>
+                      </div>
                     ) : (
                       // Render Markdown when complete
                       <ReactMarkdown
@@ -187,7 +190,7 @@ export function Chat() {
             </div>
           ))}
 
-          {isLoading && (
+          {isLoading && messages.filter(m => m.metadata?.isStreaming).length === 0 && (
             <div className="flex justify-start">
               <div className="bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl rounded-bl-sm">
                 <div className="p-4 flex items-center gap-3">
