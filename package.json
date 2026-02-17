@@ -7,7 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"backend,frontend\" --prefix-colors \"blue,magenta\"",
+    "dev": "concurrently \"npm run dev:opencode\" \"npm run dev:backend\" \"npm run dev:frontend\" --names \"opencode,backend,frontend\" --prefix-colors \"green,blue,magenta\"",
+    "dev:opencode": "opencode serve --hostname=127.0.0.1 --port=4096",
     "dev:backend": "npm run dev -w packages/backend",
     "dev:frontend": "npm run dev -w packages/frontend",
     "build": "npm run build --workspaces --if-present",

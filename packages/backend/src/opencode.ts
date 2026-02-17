@@ -54,9 +54,9 @@ class OpencodeManager {
       // Check if we're running inside a Claude Code session
       const isNested = process.env.CLAUDECODE !== undefined;
 
-      // On Windows, spawn has issues with .cmd files, so try client mode first
+      // On Windows, ALWAYS use client mode (spawn has issues with .cmd files)
       const isWindows = process.platform === 'win32';
-      const tryClientMode = isNested || (isWindows && process.env.OPENCODE_SERVER_URL);
+      const tryClientMode = isNested || isWindows;
 
       if (tryClientMode) {
         const reason = isNested ? 'nested session' : 'Windows client mode';
@@ -72,12 +72,6 @@ class OpencodeManager {
 
         this.isInitialized = true;
         console.log(`✅ Connected to OpenCode at: ${serverUrl}`);
-
-        if (isWindows && !process.env.OPENCODE_SERVER_URL) {
-          console.log('\n💡 Tip: Start OpenCode server manually with:');
-          console.log('   opencode serve --hostname=127.0.0.1 --port=4096');
-          console.log('   Or set OPENCODE_SERVER_URL environment variable\n');
-        }
       } else {
         // Create new OpenCode instance with server
         const { client, server } = await createOpencode({
