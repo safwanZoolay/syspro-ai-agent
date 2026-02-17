@@ -1,0 +1,7 @@
+{
+  "allowedPaths": [
+    "/home/user/syspro-ai-agent",
+    "/home/user/projects"
+  ],
+  "description": "Whitelist of directories that workflows can access"
+}

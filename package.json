@@ -1,0 +1,19 @@
+{
+  "name": "opencode-web-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web UI for OpenCode AI Agent interactions",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:backend": "npm run dev -w packages/backend",
+    "dev:frontend": "npm run dev -w packages/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist"
+  },
+  "keywords": ["opencode", "ai", "agent", "web-ui"],
+  "author": "",
+  "license": "MIT"
+}
