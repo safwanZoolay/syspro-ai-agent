@@ -1,4 +1,4 @@
-import { createOpencode } from '@opencode-ai/sdk';
+import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk';
 import type { OpencodeClient } from '@opencode-ai/sdk';
 
 class OpencodeManager {
@@ -24,17 +24,33 @@ class OpencodeManager {
     try {
       console.log('🚀 Initializing OpenCode SDK...');
 
-      // Create OpenCode instance with server
-      const { client, server } = await createOpencode({
-        // Server options can be configured here if needed
-      });
+      // Check if we're running inside a Claude Code session
+      const isNested = process.env.CLAUDECODE !== undefined;
 
-      this.client = client;
-      this.server = server;
-      this.isInitialized = true;
+      if (isNested) {
+        console.log('⚠️  Detected nested Claude Code session');
+        console.log('🔌 Connecting to existing Claude Code instance...');
 
-      console.log(`✅ OpenCode SDK initialized`);
-      console.log(`🌐 OpenCode server running at: ${server.url}`);
+        // Connect to existing Claude Code server (usually on port 4096)
+        this.client = createOpencodeClient({
+          baseUrl: process.env.CLAUDECODE || 'http://127.0.0.1:4096',
+        });
+
+        this.isInitialized = true;
+        console.log(`✅ Connected to Claude Code at: ${process.env.CLAUDECODE || 'http://127.0.0.1:4096'}`);
+      } else {
+        // Create new OpenCode instance with server
+        const { client, server } = await createOpencode({
+          // Server options can be configured here if needed
+        });
+
+        this.client = client;
+        this.server = server;
+        this.isInitialized = true;
+
+        console.log(`✅ OpenCode SDK initialized`);
+        console.log(`🌐 OpenCode server running at: ${server.url}`);
+      }
 
       return this.client;
     } catch (error: any) {
@@ -51,7 +67,7 @@ class OpencodeManager {
   }
 
   getServerUrl(): string | null {
-    return this.server?.url || null;
+    return this.server?.url || process.env.CLAUDECODE || null;
   }
 
   async shutdown() {
