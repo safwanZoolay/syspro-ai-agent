@@ -136,10 +136,10 @@ export function setupSocketHandlers(io: SocketServer) {
                     console.log('🔧 Tool:', toolName, status);
                   }
                 }
-              } else if (eventData.type === 'session.status') {
-                // Session status changes
-                const status = eventData.status?.type;
-                if (status === 'idle') {
+              } else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
+                // Session status changes - check both event types
+                const status = eventData.properties?.status?.type || eventData.status?.type;
+                if (status === 'idle' || eventData.type === 'session.idle') {
                   console.log('✅ Session idle - message complete');
                   break;
                 }
