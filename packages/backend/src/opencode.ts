@@ -54,17 +54,30 @@ class OpencodeManager {
       // Check if we're running inside a Claude Code session
       const isNested = process.env.CLAUDECODE !== undefined;
 
-      if (isNested) {
-        console.log('⚠️  Detected nested Claude Code session');
-        console.log('🔌 Connecting to existing Claude Code instance...');
+      // On Windows, spawn has issues with .cmd files, so try client mode first
+      const isWindows = process.platform === 'win32';
+      const tryClientMode = isNested || (isWindows && process.env.OPENCODE_SERVER_URL);
 
-        // Connect to existing Claude Code server (usually on port 4096)
+      if (tryClientMode) {
+        const reason = isNested ? 'nested session' : 'Windows client mode';
+        console.log(`⚠️  Detected ${reason}`);
+        console.log('🔌 Connecting to existing OpenCode instance...');
+
+        const serverUrl = process.env.OPENCODE_SERVER_URL || process.env.CLAUDECODE || 'http://127.0.0.1:4096';
+
+        // Connect to existing OpenCode server
         this.client = createOpencodeClient({
-          baseUrl: process.env.CLAUDECODE || 'http://127.0.0.1:4096',
+          baseUrl: serverUrl,
         });
 
         this.isInitialized = true;
-        console.log(`✅ Connected to Claude Code at: ${process.env.CLAUDECODE || 'http://127.0.0.1:4096'}`);
+        console.log(`✅ Connected to OpenCode at: ${serverUrl}`);
+
+        if (isWindows && !process.env.OPENCODE_SERVER_URL) {
+          console.log('\n💡 Tip: Start OpenCode server manually with:');
+          console.log('   opencode serve --hostname=127.0.0.1 --port=4096');
+          console.log('   Or set OPENCODE_SERVER_URL environment variable\n');
+        }
       } else {
         // Create new OpenCode instance with server
         const { client, server } = await createOpencode({
@@ -82,6 +95,16 @@ class OpencodeManager {
       return this.client;
     } catch (error: any) {
       console.error('❌ Failed to initialize OpenCode SDK:', error);
+
+      // On Windows, provide helpful error message
+      if (process.platform === 'win32' && error.code === 'ENOENT') {
+        console.log('\n💡 Workaround for Windows:');
+        console.log('1. Open a separate terminal');
+        console.log('2. Run: opencode serve --hostname=127.0.0.1 --port=4096');
+        console.log('3. Set environment variable: set OPENCODE_SERVER_URL=http://127.0.0.1:4096');
+        console.log('4. Restart this server\n');
+      }
+
       throw new Error(`OpenCode initialization failed: ${error.message}`);
     }
   }
