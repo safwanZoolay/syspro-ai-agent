@@ -71,30 +71,90 @@ export function setupSocketHandlers(io: SocketServer) {
         console.log('🤖 Sending to OpenCode session:', opcodeSessionId);
         const client = opcodeManager.getClient();
 
-        console.log('📡 Calling OpenCode API...');
+        // Create streaming message
+        let streamedContent = '';
+        const assistantMessage = db.createMessage({
+          sessionId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+        });
 
-        // Call OpenCode API (no streaming for now - SDK doesn't expose it easily)
-        const response = await client.session.prompt({
+        console.log('📡 Starting event subscription for streaming...');
+
+        // Subscribe to events for real-time updates
+        const eventPromise = (async () => {
+          try {
+            const events = await client.event.subscribe();
+            console.log('✅ Subscribed to events');
+
+            for await (const event of events.stream) {
+              console.log('📨 Event:', event.type, event.properties);
+
+              // Handle different event types
+              if (event.type === 'message_start' || event.type === 'content_block_start') {
+                // Message/content block starting
+                continue;
+              } else if (event.type === 'content_block_delta') {
+                // Text streaming - append to content
+                const delta = (event.properties as any)?.delta;
+                if (delta?.type === 'text_delta' && delta.text) {
+                  streamedContent += delta.text;
+                  db.updateMessage(assistantMessage.id, { content: streamedContent });
+
+                  // Emit streaming update
+                  io.to(sessionId).emit('message_update', {
+                    messageId: assistantMessage.id,
+                    content: streamedContent,
+                    isComplete: false,
+                  });
+                }
+              } else if (event.type === 'tool_use') {
+                // Tool usage
+                const toolName = (event.properties as any)?.name || 'unknown';
+                const toolActivity = db.createActivity({
+                  sessionId,
+                  type: 'tool_use',
+                  description: `Using tool: ${toolName}`,
+                  timestamp: new Date().toISOString(),
+                  data: event.properties,
+                });
+                io.to(sessionId).emit('activity', toolActivity);
+              } else if (event.type === 'message_stop') {
+                // Message complete
+                console.log('✅ Message complete via event stream');
+                break;
+              }
+            }
+          } catch (error) {
+            console.error('⚠️ Event subscription error:', error);
+            // Continue - will use fallback prompt
+          }
+        })();
+
+        // Send prompt (this triggers the events)
+        console.log('📤 Sending prompt...');
+        const promptPromise = client.session.prompt({
           path: { id: opcodeSessionId },
           body: {
             parts: [{ type: 'text', text: content }],
           },
         });
 
-        console.log('✅ Got response from OpenCode:', { status: response.response?.status, hasData: !!response.data });
+        // Wait for both to complete
+        const [, response] = await Promise.all([eventPromise, promptPromise]);
 
-        // Extract assistant response
-        const assistantContent = extractResponseContent(response);
-        console.log('📝 Extracted content length:', assistantContent.length);
+        console.log('✅ Got final response');
 
-        // Save assistant message
-        const assistantMessage = db.createMessage({
-          sessionId,
-          role: 'assistant',
-          content: assistantContent,
-          timestamp: new Date().toISOString(),
-        });
+        // If we didn't get content from streaming, extract from response
+        if (!streamedContent) {
+          console.log('⚠️ No streamed content, extracting from response...');
+          streamedContent = extractResponseContent(response);
+          db.updateMessage(assistantMessage.id, { content: streamedContent });
+        }
 
+        // Emit final message
+        assistantMessage.content = streamedContent;
         io.to(sessionId).emit('message', assistantMessage);
 
         // Log completion activity
