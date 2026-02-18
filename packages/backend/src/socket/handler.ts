@@ -112,10 +112,33 @@ async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opc
           }
         }
       }
-      // Check for session idle
+      // Check for session status changes
       else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
-        const status = eventData.properties?.status?.type || eventData.status?.type;
-        if (status === 'idle' || eventData.type === 'session.idle') {
+        const statusData = eventData.properties?.status || eventData.status;
+        const statusType = statusData?.type;
+
+        // Handle quota exceeded / rate limit errors
+        if (statusType === 'retry' || statusType === 'error') {
+          const errorMessage = statusData?.message || 'Unknown error';
+          console.error(`❌ [${sessionId}] OpenCode error: ${errorMessage}`);
+
+          // Notify frontend of the error
+          io.to(sessionId).emit('error', {
+            type: statusType === 'retry' ? 'rate_limit' : 'api_error',
+            message: errorMessage,
+            retryAttempt: statusData?.attempt,
+            nextRetry: statusData?.next,
+          });
+
+          // If it's a permanent error (not retry), stop subscription
+          if (statusType === 'error') {
+            console.log(`🛑 [${sessionId}] Stopping due to permanent error`);
+            break;
+          }
+        }
+
+        // Handle session idle
+        if (statusType === 'idle' || eventData.type === 'session.idle') {
           console.log(`✅ [${sessionId}] Session idle - stopping event subscription`);
           break;
         }

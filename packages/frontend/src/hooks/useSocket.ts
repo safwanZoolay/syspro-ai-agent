@@ -36,6 +36,7 @@ export function useChat(sessionId: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activities, setActivities] = useState<SessionActivity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!socket || !sessionId) return;
@@ -126,9 +127,23 @@ export function useChat(sessionId: string | null) {
     });
 
     // Listen for errors
-    socket.on('error', (error: { message: string }) => {
-      console.error('Socket error:', error);
+    socket.on('error', (errorData: { type: string; message: string; retryAttempt?: number }) => {
+      console.error('Socket error:', errorData);
+
+      // Format error message for user
+      let userMessage = errorData.message;
+      if (errorData.type === 'rate_limit') {
+        userMessage = `⚠️ API Rate Limit: ${errorData.message}`;
+        if (errorData.retryAttempt) {
+          userMessage += ` (Retry attempt ${errorData.retryAttempt})`;
+        }
+      }
+
+      setError(userMessage);
       setIsLoading(false);
+
+      // Clear error after 10 seconds
+      setTimeout(() => setError(null), 10000);
     });
 
     return () => {
@@ -156,5 +171,6 @@ export function useChat(sessionId: string | null) {
     sendMessage,
     isLoading,
     connected,
+    error,
   };
 }
