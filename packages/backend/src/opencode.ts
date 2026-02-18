@@ -62,8 +62,12 @@ class OpencodeManager {
         const reason = isNested ? 'nested session' : 'Windows client mode';
         console.log(`⚠️  Detected ${reason}`);
         console.log('🔌 Connecting to existing OpenCode instance...');
+        console.log('🔍 CLAUDECODE env:', process.env.CLAUDECODE);
+        console.log('🔍 OPENCODE_SERVER_URL env:', process.env.OPENCODE_SERVER_URL);
 
-        const serverUrl = process.env.OPENCODE_SERVER_URL || process.env.CLAUDECODE || 'http://127.0.0.1:4096';
+        // Fix: CLAUDECODE is just "1", not a URL! Always use localhost for standalone server
+        const serverUrl = process.env.OPENCODE_SERVER_URL || 'http://127.0.0.1:4096';
+        console.log('🔍 Using server URL:', serverUrl);
 
         // Connect to existing OpenCode server
         this.client = createOpencodeClient({
