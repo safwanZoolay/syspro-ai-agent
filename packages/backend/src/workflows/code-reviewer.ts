@@ -14,16 +14,41 @@ export const codeReviewerWorkflow: WorkflowHandler = {
       required: true,
       placeholder: 'INVQRY',
     },
+    {
+      name: 'reviewFocus',
+      label: 'Review Focus',
+      type: 'select',
+      required: false,
+      placeholder: 'Select focus area',
+      options: [
+        'General Review',
+        'Security',
+        'Performance',
+        'Code Quality',
+        'Best Practices',
+      ],
+    },
+    {
+      name: 'additionalContext',
+      label: 'Additional Context',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Any specific concerns or areas to focus on...',
+    },
   ],
 
   buildSystemPrompt: (inputs) => {
     const businessObject = inputs.businessObject;
     const filePath = `C:\\RND900\\SOURCE\\${businessObject}.CBL`;
+    const focus = inputs.reviewFocus || 'General Review';
+    const context = inputs.additionalContext || 'None provided';
 
     return `You are performing a code review.
 
 **Business Object:** ${businessObject}
 **File Path:** ${filePath}
+**Review Focus:** ${focus}
+**Additional Context:** ${context}
 
 Instructions:
 1. Use the code-reviewer skill to analyze the code
