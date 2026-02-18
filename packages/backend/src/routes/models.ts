@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { opcodeManager } from '../opencode.js';
+import { quotaTracker } from '../quota-tracker.js';
 
 const router = Router();
 
@@ -17,7 +18,14 @@ router.get('/', async (req, res) => {
     }
 
     // Extract models from providers
-    const models: Array<{ id: string; name: string; provider: string }> = [];
+    const models: Array<{
+      id: string;
+      name: string;
+      provider: string;
+      quotaExhausted?: boolean;
+      retryAfter?: number;
+      quotaMessage?: string;
+    }> = [];
 
     // Get connected providers (the ones user has access to)
     const connectedProviders = providersResponse.data.connected || [];
@@ -51,10 +59,17 @@ router.get('/', async (req, res) => {
             continue;
           }
 
+          // Check quota status
+          const modelId = modelData.id || modelKey;
+          const quotaStatus = quotaTracker.getStatus(modelId);
+
           models.push({
-            id: modelData.id || modelKey,
+            id: modelId,
             name: modelData.name || modelKey,
             provider: provider.name || provider.id,
+            quotaExhausted: quotaStatus?.exhausted || false,
+            retryAfter: quotaStatus?.retryAfter,
+            quotaMessage: quotaStatus?.message,
           });
         }
       } else {

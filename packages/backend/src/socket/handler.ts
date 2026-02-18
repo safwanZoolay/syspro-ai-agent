@@ -3,6 +3,7 @@ import { opcodeManager } from '../opencode.js';
 import { db } from '../db/json-store.js';
 import type { Message, StreamEvent, SessionActivity } from '@opencode-web-ui/shared';
 import { getWorkflow } from '../workflows/registry.js';
+import { quotaTracker } from '../quota-tracker.js';
 
 interface ChatMessage {
   sessionId: string;
@@ -121,6 +122,15 @@ async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opc
         if (statusType === 'retry' || statusType === 'error') {
           const errorMessage = statusData?.message || 'Unknown error';
           console.error(`❌ [${sessionId}] OpenCode error: ${errorMessage}`);
+
+          // Track quota exhaustion for the model
+          if (errorMessage.includes('quota exceeded') || errorMessage.includes('Too Many Requests')) {
+            const session = db.getSession(sessionId);
+            const modelId = session?.metadata?.model;
+            if (modelId) {
+              quotaTracker.markExhausted(modelId, statusData?.next, errorMessage);
+            }
+          }
 
           // Notify frontend of the error
           io.to(sessionId).emit('error', {

@@ -6,6 +6,9 @@ export interface Model {
   id: string;
   name: string;
   provider: string;
+  quotaExhausted?: boolean;
+  retryAfter?: number;
+  quotaMessage?: string;
 }
 
 export async function fetchModels(): Promise<Model[]> {

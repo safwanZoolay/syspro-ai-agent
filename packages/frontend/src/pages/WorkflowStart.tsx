@@ -66,6 +66,17 @@ export function WorkflowStart() {
   async function handleStart() {
     if (!workflow) return;
 
+    // Check if selected model has quota
+    const selectedModel = availableModels.find(m => m.id === model);
+    if (selectedModel?.quotaExhausted) {
+      const retryDate = selectedModel.retryAfter ? new Date(selectedModel.retryAfter) : null;
+      const timeStr = retryDate
+        ? `Try again at ${retryDate.toLocaleTimeString()}`
+        : 'Try again later';
+      alert(`⚠️ The selected model "${selectedModel.name}" has exhausted its quota.\n\n${timeStr}\n\nPlease select a different model.`);
+      return;
+    }
+
     // Validate required inputs
     const missingRequired = workflow.inputs?.filter(
       (input) => input.required && !inputs[input.name]?.trim()
@@ -163,11 +174,16 @@ export function WorkflowStart() {
 
                     return Object.entries(groupedModels).map(([provider, models]) => (
                       <optgroup key={provider} label={provider.charAt(0).toUpperCase() + provider.slice(1)}>
-                        {models.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
+                        {models.map((m) => {
+                          const quotaWarning = m.quotaExhausted
+                            ? ' ⚠️ (Quota exhausted)'
+                            : '';
+                          return (
+                            <option key={m.id} value={m.id} disabled={m.quotaExhausted}>
+                              {m.name}{quotaWarning}
+                            </option>
+                          );
+                        })}
                       </optgroup>
                     ));
                   })()
@@ -182,6 +198,31 @@ export function WorkflowStart() {
                   ? `${availableModels.length} models available from your OpenCode subscription`
                   : 'Choose the model based on your needs: Opus for complex tasks, Sonnet for balance, Haiku for speed'}
               </p>
+              {/* Show quota warning for selected model */}
+              {(() => {
+                const selectedModel = availableModels.find(m => m.id === model);
+                if (selectedModel?.quotaExhausted && selectedModel.retryAfter) {
+                  const retryDate = new Date(selectedModel.retryAfter);
+                  const now = new Date();
+                  const minutesUntil = Math.ceil((retryDate.getTime() - now.getTime()) / 60000);
+                  const hoursUntil = Math.floor(minutesUntil / 60);
+                  const timeStr = hoursUntil > 0
+                    ? `${hoursUntil}h ${minutesUntil % 60}m`
+                    : `${minutesUntil}m`;
+
+                  return (
+                    <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-600 dark:text-yellow-400">
+                      ⚠️ This model's quota is exhausted. Retry available in {timeStr}
+                      {selectedModel.quotaMessage && (
+                        <div className="mt-1 text-yellow-600/80 dark:text-yellow-400/80">
+                          {selectedModel.quotaMessage}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {workflow.inputs && workflow.inputs.length > 0 ? (
