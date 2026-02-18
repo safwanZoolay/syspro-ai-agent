@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
 
     // Create OpenCode session
     console.log('🔧 Creating OpenCode session...');
-    const selectedModel = model || 'claude-sonnet-4-5'; // Default to Sonnet
+    const selectedModel = model || 'claude-sonnet-4-5-20250929'; // Default to Sonnet 4.5
     console.log('🤖 Using model:', selectedModel);
 
     const client = opcodeManager.getClient();

@@ -13,7 +13,7 @@ export function WorkflowStart() {
   const navigate = useNavigate();
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [inputs, setInputs] = useState<Record<string, any>>({});
-  const [model, setModel] = useState<string>('claude-sonnet-4-5');
+  const [model, setModel] = useState<string>('claude-sonnet-4-5-20250929');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -123,9 +123,21 @@ export function WorkflowStart() {
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
               >
-                <option value="claude-sonnet-4-5">Claude 4.5 Sonnet (Recommended - Balanced)</option>
-                <option value="claude-opus-4-6">Claude 4.6 Opus (Most Powerful)</option>
-                <option value="claude-haiku-4-5">Claude 4.5 Haiku (Fastest & Cheapest)</option>
+                <optgroup label="Claude 4.6 / 4.5 (Latest)">
+                  <option value="claude-opus-4-6">Claude 4.6 Opus (Most Powerful)</option>
+                  <option value="claude-sonnet-4-5-20250929">Claude 4.5 Sonnet (Recommended - Balanced)</option>
+                  <option value="claude-haiku-4-5-20251001">Claude 4.5 Haiku (Fastest & Cheapest)</option>
+                </optgroup>
+                <optgroup label="Claude 3.5 (Previous Generation)">
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Oct 2024)</option>
+                  <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (Jun 2024)</option>
+                  <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Oct 2024)</option>
+                </optgroup>
+                <optgroup label="Claude 3 (Legacy)">
+                  <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                  <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                  <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                </optgroup>
               </select>
               <p className="text-xs text-muted-foreground mt-2">
                 Choose the model based on your needs: Opus for complex tasks, Sonnet for balance, Haiku for speed
