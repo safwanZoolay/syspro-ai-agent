@@ -1,5 +1,6 @@
 import type { WorkflowRegistry, WorkflowHandler } from './workflow.interface.js';
 import { codeReviewerWorkflow } from './code-reviewer.js';
+import { codeCoverageHunterWorkflow } from './code-coverage-hunter.js';
 
 // Registry of all available workflows
 const workflows: WorkflowRegistry = new Map();
@@ -14,6 +15,7 @@ function registerWorkflow(workflow: WorkflowHandler) {
 export function initializeWorkflows() {
   console.log('📋 Initializing workflows...');
   registerWorkflow(codeReviewerWorkflow);
+  registerWorkflow(codeCoverageHunterWorkflow);
   console.log(`✅ ${workflows.size} workflow(s) registered`);
 }
 

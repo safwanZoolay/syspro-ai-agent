@@ -52,10 +52,12 @@ export function WorkflowStart() {
 
     setLoading(true);
     try {
-      // Build custom title for code-reviewer workflow
+      // Build custom title based on workflow
       let customTitle: string | undefined;
       if (workflow.id === 'code-reviewer' && inputs.businessObject) {
         customTitle = `Code review - ${inputs.businessObject}`;
+      } else if (workflow.id === 'code-coverage-hunter' && inputs.businessObject) {
+        customTitle = `Coverage Hunter - ${inputs.businessObject}`;
       }
 
       const session = await createSession(workflow.id, inputs, customTitle);
@@ -126,6 +128,15 @@ export function WorkflowStart() {
                       />
                     )}
 
+                    {input.type === 'password' && (
+                      <Input
+                        type="password"
+                        placeholder={input.placeholder}
+                        value={inputs[input.name] || ''}
+                        onChange={(e) => setInputs({ ...inputs, [input.name]: e.target.value })}
+                      />
+                    )}
+
                     {input.type === 'textarea' && (
                       <Textarea
                         placeholder={input.placeholder}
@@ -148,6 +159,10 @@ export function WorkflowStart() {
                           </option>
                         ))}
                       </select>
+                    )}
+
+                    {input.helpText && (
+                      <p className="text-xs text-muted-foreground mt-1">{input.helpText}</p>
                     )}
                   </div>
                 ))}

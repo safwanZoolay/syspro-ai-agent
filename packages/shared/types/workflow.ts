@@ -1,10 +1,11 @@
 export interface WorkflowInput {
   name: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'file';
+  type: 'text' | 'textarea' | 'select' | 'file' | 'password';
   required: boolean;
   placeholder?: string;
   options?: string[]; // For select type
+  helpText?: string; // Additional help text for the input
 }
 
 export interface Workflow {
