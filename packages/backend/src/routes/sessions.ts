@@ -89,20 +89,32 @@ router.post('/', async (req, res) => {
     const systemPrompt = workflow.buildSystemPrompt(inputs || {});
     console.log('✅ System prompt built (length:', systemPrompt.length, 'chars)');
 
-    // Determine if we should trigger an immediate response
-    const shouldTriggerResponse = workflow.initialMessage !== undefined;
-    console.log('🎯 Should trigger response:', shouldTriggerResponse);
-
-    // Inject system prompt into the session
+    // Inject system prompt (without triggering response)
     console.log('💉 Injecting system prompt...');
     await client.session.promptAsync({
       path: { id: opcodeSession.data.id },
       body: {
         parts: [{ type: 'text', text: systemPrompt }],
-        noReply: !shouldTriggerResponse, // If noReply=false, OpenCode will trigger a response
+        noReply: true, // Don't respond to system prompt
       },
     });
     console.log('✅ System prompt injected');
+
+    // If workflow has initial message, send it to trigger response
+    if (workflow.initialMessage) {
+      const initialMsg = workflow.initialMessage(inputs || {});
+      console.log('📤 Sending initial message to trigger workflow...');
+      console.log('   Message:', initialMsg.substring(0, 100) + '...');
+
+      await client.session.promptAsync({
+        path: { id: opcodeSession.data.id },
+        body: {
+          parts: [{ type: 'text', text: initialMsg }],
+          noReply: false, // This triggers OpenCode to respond!
+        },
+      });
+      console.log('✅ Initial message sent - OpenCode should start responding');
+    }
 
     // Log initial activity
     console.log('📊 Creating initial activity log...');
