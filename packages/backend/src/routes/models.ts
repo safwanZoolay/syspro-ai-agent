@@ -19,13 +19,23 @@ router.get('/', async (req, res) => {
     // Extract models from providers
     const models: Array<{ id: string; name: string; provider: string }> = [];
 
+    // Get connected providers (the ones user has access to)
+    const connectedProviders = providersResponse.data.connected || [];
+    console.log(`🔗 Connected providers:`, connectedProviders);
+
     // Parse provider data - using 'all' array from response
-    const providers = providersResponse.data.all || [];
+    const allProviders = providersResponse.data.all || [];
 
-    console.log(`👥 Found ${providers.length} providers`);
+    console.log(`👥 Found ${allProviders.length} total providers, ${connectedProviders.length} connected`);
 
-    for (const provider of providers) {
-      console.log(`\n🔍 Provider: ${provider.name || provider.id}`);
+    for (const provider of allProviders) {
+      // Only include models from connected providers
+      if (!connectedProviders.includes(provider.id)) {
+        console.log(`⏭️  Skipping ${provider.name || provider.id} (not connected)`);
+        continue;
+      }
+
+      console.log(`\n🔍 Provider: ${provider.name || provider.id} ✅`);
 
       // Models is an object/dictionary, not an array!
       if (provider.models && typeof provider.models === 'object') {
@@ -34,6 +44,13 @@ router.get('/', async (req, res) => {
 
         for (const [modelKey, model] of modelEntries) {
           const modelData = model as any;
+
+          // Skip deprecated or alpha models unless explicitly available
+          if (modelData.status === 'deprecated') {
+            console.log(`   ⏭️  Skipping ${modelData.name} (deprecated)`);
+            continue;
+          }
+
           models.push({
             id: modelData.id || modelKey,
             name: modelData.name || modelKey,
