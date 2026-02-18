@@ -118,12 +118,14 @@ Start by connecting to SYSPRO and analyzing the code coverage report.`;
 
   initialMessage: (inputs) => {
     const businessObject = inputs.businessObject || 'the specified business object';
-    return `/coverage-hunter
+    const coverageFilePath = `file:///K:/CodeCoverage/Distribution/${businessObject}/Syspro_${businessObject}.htm`;
 
-Please analyze the code coverage for ${businessObject} and identify areas that need better test coverage.`;
+    return `Please connect to the SYSPRO system and analyze the code coverage report for ${businessObject}.
+
+The code coverage file is located at: ${coverageFilePath}
+
+Please start by accessing the coverage report and identifying areas that need better test coverage.`;
   },
-
-  skillName: 'code-coverage-hunter',
 
   allowedPaths: [
     '/home/user/syspro-ai-agent',

@@ -51,28 +51,31 @@ export const codeReviewerWorkflow: WorkflowHandler = {
 **Additional Context:** ${context}
 
 Instructions:
-1. Use the code-reviewer skill to analyze the code
-2. Read the specified file and understand the implementation
-3. Provide a comprehensive review covering:
+1. Read the specified file and understand the implementation
+2. Provide a comprehensive review covering:
    - Code quality and readability
    - Potential bugs or issues
    - Security concerns
    - Performance considerations
    - Best practices and patterns
    - Suggestions for improvement
-4. Ask clarifying questions if needed
-5. Be constructive and specific in your feedback
+3. Ask clarifying questions if needed
+4. Be constructive and specific in your feedback
 
 Start by reading the file and then provide your review.`;
   },
 
   initialMessage: (inputs) => {
-    return `/code-reviewer
+    const businessObject = inputs.businessObject;
+    const filePath = `C:\\RND900\\SOURCE\\${businessObject}.CBL`;
+    const focus = inputs.reviewFocus || 'General Review';
 
-Please perform a code review for ${inputs.businessObject}.`;
+    return `Please perform a comprehensive code review of the file at ${filePath}.
+
+Focus area: ${focus}
+
+Please start by reading the file and provide your analysis.`;
   },
-
-  skillName: 'code-reviewer',
 
   allowedPaths: [
     '/home/user/syspro-ai-agent',
