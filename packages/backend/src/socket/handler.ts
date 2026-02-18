@@ -72,6 +72,10 @@ async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opc
         console.log(`🔍 [${sessionId}] TEXT DELTA:`, JSON.stringify(eventData, null, 2));
       } else if (eventData.type === 'message.part.updated') {
         console.log(`🔍 [${sessionId}] PART UPDATED:`, JSON.stringify(eventData.properties || eventData, null, 2));
+      } else if (eventData.type === 'session.status') {
+        console.log(`🔍 [${sessionId}] SESSION STATUS:`, JSON.stringify(eventData.properties || eventData, null, 2));
+      } else if (eventData.type?.includes('error') || eventData.type?.includes('Error')) {
+        console.log(`❌ [${sessionId}] ERROR EVENT:`, JSON.stringify(eventData, null, 2));
       }
 
       // Handle text streaming
