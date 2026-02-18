@@ -118,7 +118,9 @@ Start by connecting to SYSPRO and analyzing the code coverage report.`;
 
   initialMessage: (inputs) => {
     const businessObject = inputs.businessObject || 'the specified business object';
-    return `Please analyze the code coverage for ${businessObject} and identify areas that need better test coverage.`;
+    return `/coverage-hunter
+
+Please analyze the code coverage for ${businessObject} and identify areas that need better test coverage.`;
   },
 
   skillName: 'code-coverage-hunter',

@@ -72,18 +72,6 @@ router.post('/', async (req, res) => {
       },
     });
 
-    // Send initial message if workflow defines one
-    if (workflow.initialMessage) {
-      const initialMsg = workflow.initialMessage(inputs || {});
-      await client.session.promptAsync({
-        path: { id: opcodeSession.data.id },
-        body: {
-          parts: [{ type: 'text', text: initialMsg }],
-          noReply: false, // Trigger response for initial message
-        },
-      });
-    }
-
     // Create session in our database
     const session = db.createSession({
       workflowId,
@@ -96,6 +84,31 @@ router.post('/', async (req, res) => {
         inputs,
       },
     });
+
+    // Send initial message if workflow defines one
+    if (workflow.initialMessage) {
+      const initialMsg = workflow.initialMessage(inputs || {});
+
+      // Store the user message in our database
+      db.createMessage({
+        sessionId: session.id,
+        role: 'user',
+        content: initialMsg,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Send to OpenCode to trigger agent response
+      // Note: We don't await this - let it happen in background
+      // The socket handler will pick up the response via events
+      client.session.prompt({
+        path: { id: opcodeSession.data.id },
+        body: {
+          parts: [{ type: 'text', text: initialMsg }],
+        },
+      }).catch((error) => {
+        console.error('Failed to send initial message:', error);
+      });
+    }
 
     // Log initial activity
     db.createActivity({

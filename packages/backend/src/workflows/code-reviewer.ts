@@ -67,7 +67,9 @@ Start by reading the file and then provide your review.`;
   },
 
   initialMessage: (inputs) => {
-    return `Please perform a code review for ${inputs.businessObject}.`;
+    return `/code-reviewer
+
+Please perform a code review for ${inputs.businessObject}.`;
   },
 
   skillName: 'code-reviewer',
