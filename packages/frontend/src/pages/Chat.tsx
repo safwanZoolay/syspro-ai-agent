@@ -220,19 +220,16 @@ export function Chat() {
             </div>
           ))}
 
-          {isLoading && messages.filter(m => m.metadata?.isStreaming).length === 0 && (
-            <div className="flex justify-start">
-              <div className="bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl rounded-bl-sm">
-                <div className="p-4 flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-sm">{thinkingMessage}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Thinking Status - above input */}
+        {isLoading && messages.filter(m => m.metadata?.isStreaming).length === 0 && (
+          <div className="px-4 py-2 flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm">{thinkingMessage}</span>
+          </div>
+        )}
 
         {/* Input */}
         <div className="border-t border-border/50 backdrop-blur-sm bg-card/50 p-4">
