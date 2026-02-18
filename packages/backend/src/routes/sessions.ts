@@ -61,18 +61,7 @@ router.post('/', async (req, res) => {
       throw new Error('Failed to create OpenCode session');
     }
 
-    // Build and inject system prompt
-    const systemPrompt = workflow.buildSystemPrompt(inputs || {});
-
-    await client.session.promptAsync({
-      path: { id: opcodeSession.data.id },
-      body: {
-        parts: [{ type: 'text', text: systemPrompt }],
-        noReply: true, // Don't trigger response for system prompt
-      },
-    });
-
-    // Create session in our database
+    // Create session in our database first
     const session = db.createSession({
       workflowId,
       title: sessionTitle,
@@ -85,11 +74,22 @@ router.post('/', async (req, res) => {
       },
     });
 
+    // Build system prompt and initial message
+    const systemPrompt = workflow.buildSystemPrompt(inputs || {});
+
     // Send initial message if workflow defines one
+    // Combine system prompt with initial message so Claude has context
     if (workflow.initialMessage) {
       const initialMsg = workflow.initialMessage(inputs || {});
 
-      // Store the user message in our database
+      // Combine system instructions with user message
+      const combinedMessage = `<system_context>
+${systemPrompt}
+</system_context>
+
+${initialMsg}`;
+
+      // Store the user message in our database (without system context)
       db.createMessage({
         sessionId: session.id,
         role: 'user',
@@ -97,16 +97,27 @@ router.post('/', async (req, res) => {
         timestamp: new Date().toISOString(),
       });
 
-      // Send to OpenCode to trigger agent response
+      // Send combined message to OpenCode to trigger agent response
       // Note: We don't await this - let it happen in background
       // The socket handler will pick up the response via events
       client.session.prompt({
         path: { id: opcodeSession.data.id },
         body: {
-          parts: [{ type: 'text', text: initialMsg }],
+          parts: [
+            { type: 'text', text: combinedMessage }
+          ],
         },
       }).catch((error) => {
         console.error('Failed to send initial message:', error);
+      });
+    } else {
+      // No initial message - just inject system prompt
+      await client.session.promptAsync({
+        path: { id: opcodeSession.data.id },
+        body: {
+          parts: [{ type: 'text', text: systemPrompt }],
+          noReply: true,
+        },
       });
     }
 
