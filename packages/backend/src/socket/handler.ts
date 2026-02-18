@@ -53,12 +53,26 @@ async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opc
         eventData.properties?.sessionID ||
         eventData.sessionID;
 
+      // Debug logging
+      if (eventData.type !== 'server.heartbeat' && eventData.type !== 'server.connected') {
+        console.log(`📨 [${sessionId}] Event: ${eventData.type}`);
+        console.log(`   EventSessionId: ${eventSessionId || 'NONE'}`);
+        console.log(`   Target: ${opcodeSessionId}`);
+        console.log(`   Match: ${!eventSessionId || eventSessionId === opcodeSessionId}`);
+      }
+
       // Skip events from other sessions
       if (eventSessionId && eventSessionId !== opcodeSessionId) {
+        console.log(`   ⏭️  SKIPPED - different session`);
         continue;
       }
 
-      console.log(`📨 [${sessionId}] Event:`, eventData.type);
+      // Log full event data for important events
+      if (eventData.type === 'message.part.delta') {
+        console.log(`🔍 [${sessionId}] TEXT DELTA:`, JSON.stringify(eventData, null, 2));
+      } else if (eventData.type === 'message.part.updated') {
+        console.log(`🔍 [${sessionId}] PART UPDATED:`, JSON.stringify(eventData.properties || eventData, null, 2));
+      }
 
       // Handle text streaming
       if (eventData.type === 'message.part.delta') {
