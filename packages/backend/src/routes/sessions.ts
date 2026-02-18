@@ -64,16 +64,25 @@ router.post('/', async (req, res) => {
     // Build and inject system prompt
     const systemPrompt = workflow.buildSystemPrompt(inputs || {});
 
-    // For code-reviewer workflow, trigger immediate response
-    const shouldTriggerResponse = workflowId === 'code-reviewer';
-
     await client.session.promptAsync({
       path: { id: opcodeSession.data.id },
       body: {
         parts: [{ type: 'text', text: systemPrompt }],
-        noReply: !shouldTriggerResponse, // Trigger response for code-reviewer
+        noReply: true, // Don't trigger response for system prompt
       },
     });
+
+    // Send initial message if workflow defines one
+    if (workflow.initialMessage) {
+      const initialMsg = workflow.initialMessage(inputs || {});
+      await client.session.promptAsync({
+        path: { id: opcodeSession.data.id },
+        body: {
+          parts: [{ type: 'text', text: initialMsg }],
+          noReply: false, // Trigger response for initial message
+        },
+      });
+    }
 
     // Create session in our database
     const session = db.createSession({
