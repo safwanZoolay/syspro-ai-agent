@@ -8,6 +8,7 @@ import { initializeWorkflows } from './workflows/registry.js';
 import { setupSocketHandlers } from './socket/handler.js';
 import workflowsRouter from './routes/workflows.js';
 import sessionsRouter from './routes/sessions.js';
+import modelsRouter from './routes/models.js';
 
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -47,6 +48,7 @@ async function startServer() {
 
   app.use('/api/workflows', workflowsRouter);
   app.use('/api/sessions', sessionsRouter);
+  app.use('/api/models', modelsRouter);
 
   // Setup Socket.IO handlers
   setupSocketHandlers(io);

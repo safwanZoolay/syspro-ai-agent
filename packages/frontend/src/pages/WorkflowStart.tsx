@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { fetchWorkflows, createSession } from '@/lib/api';
+import { fetchWorkflows, createSession, fetchModels, type Model } from '@/lib/api';
 import type { Workflow } from '@opencode-web-ui/shared';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 
@@ -14,10 +14,13 @@ export function WorkflowStart() {
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [inputs, setInputs] = useState<Record<string, any>>({});
   const [model, setModel] = useState<string>('claude-sonnet-4-5-20250929');
+  const [availableModels, setAvailableModels] = useState<Model[]>([]);
+  const [loadingModels, setLoadingModels] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadWorkflow();
+    loadModels();
   }, [workflowId]);
 
   async function loadWorkflow() {
@@ -35,6 +38,28 @@ export function WorkflowStart() {
       }
     } catch (error) {
       console.error('Failed to load workflow:', error);
+    }
+  }
+
+  async function loadModels() {
+    try {
+      setLoadingModels(true);
+      const models = await fetchModels();
+      setAvailableModels(models);
+
+      // Set default model if available
+      if (models.length > 0) {
+        const sonnetModel = models.find(m => m.id.includes('sonnet-4-5'));
+        if (sonnetModel) {
+          setModel(sonnetModel.id);
+        } else {
+          setModel(models[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load models:', error);
+    } finally {
+      setLoadingModels(false);
     }
   }
 
@@ -122,25 +147,40 @@ export function WorkflowStart() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
+                disabled={loadingModels}
               >
-                <optgroup label="Claude 4.6 / 4.5 (Latest)">
-                  <option value="claude-opus-4-6">Claude 4.6 Opus (Most Powerful)</option>
-                  <option value="claude-sonnet-4-5-20250929">Claude 4.5 Sonnet (Recommended - Balanced)</option>
-                  <option value="claude-haiku-4-5-20251001">Claude 4.5 Haiku (Fastest & Cheapest)</option>
-                </optgroup>
-                <optgroup label="Claude 3.5 (Previous Generation)">
-                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Oct 2024)</option>
-                  <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet (Jun 2024)</option>
-                  <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Oct 2024)</option>
-                </optgroup>
-                <optgroup label="Claude 3 (Legacy)">
-                  <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                  <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                  <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                </optgroup>
+                {loadingModels ? (
+                  <option>Loading models...</option>
+                ) : availableModels.length > 0 ? (
+                  (() => {
+                    // Group models by provider
+                    const groupedModels = availableModels.reduce((acc, model) => {
+                      const provider = model.provider || 'other';
+                      if (!acc[provider]) acc[provider] = [];
+                      acc[provider].push(model);
+                      return acc;
+                    }, {} as Record<string, Model[]>);
+
+                    return Object.entries(groupedModels).map(([provider, models]) => (
+                      <optgroup key={provider} label={provider.charAt(0).toUpperCase() + provider.slice(1)}>
+                        {models.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ));
+                  })()
+                ) : (
+                  <option value="claude-sonnet-4-5-20250929">Claude 4.5 Sonnet (Default)</option>
+                )}
               </select>
               <p className="text-xs text-muted-foreground mt-2">
-                Choose the model based on your needs: Opus for complex tasks, Sonnet for balance, Haiku for speed
+                {loadingModels
+                  ? 'Fetching available models from OpenCode...'
+                  : availableModels.length > 0
+                  ? `${availableModels.length} models available from your OpenCode subscription`
+                  : 'Choose the model based on your needs: Opus for complex tasks, Sonnet for balance, Haiku for speed'}
               </p>
             </div>
 

@@ -2,6 +2,21 @@ import type { Workflow, Session } from '@opencode-web-ui/shared';
 
 const API_URL = '/api';
 
+export interface Model {
+  id: string;
+  name: string;
+  provider: string;
+}
+
+export async function fetchModels(): Promise<Model[]> {
+  const response = await fetch(`${API_URL}/models`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch models');
+  }
+  const data = await response.json();
+  return data.models;
+}
+
 export async function fetchWorkflows(): Promise<Workflow[]> {
   const response = await fetch(`${API_URL}/workflows`);
   if (!response.ok) {
