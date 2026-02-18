@@ -12,31 +12,45 @@ router.get('/', async (req, res) => {
     const providersResponse = await (client as any).provider.list();
 
     if (!providersResponse.data) {
+      console.log('⚠️ No data in providersResponse');
       return res.json({ models: [] });
     }
 
     // Extract models from providers
     const models: Array<{ id: string; name: string; provider: string }> = [];
 
-    // Parse provider data to extract available models
-    const providers = providersResponse.data.providers || [];
+    // Parse provider data - using 'all' array from response
+    const providers = providersResponse.data.all || [];
+
+    console.log(`👥 Found ${providers.length} providers`);
 
     for (const provider of providers) {
-      if (provider.models && Array.isArray(provider.models)) {
-        for (const model of provider.models) {
+      console.log(`\n🔍 Provider: ${provider.name || provider.id}`);
+
+      // Models is an object/dictionary, not an array!
+      if (provider.models && typeof provider.models === 'object') {
+        const modelEntries = Object.entries(provider.models);
+        console.log(`   ✅ Has ${modelEntries.length} models`);
+
+        for (const [modelKey, model] of modelEntries) {
+          const modelData = model as any;
           models.push({
-            id: model.id || model.name,
-            name: model.name || model.id,
+            id: modelData.id || modelKey,
+            name: modelData.name || modelKey,
             provider: provider.name || provider.id,
           });
         }
+      } else {
+        console.log(`   ❌ No models object found`);
       }
     }
 
-    console.log('📋 Available models:', models.length);
+    console.log(`\n📋 Total available models: ${models.length}`);
+    console.log('Models:', JSON.stringify(models, null, 2));
     res.json({ models });
   } catch (error: any) {
     console.error('❌ Failed to fetch models:', error);
+    console.error('Error stack:', error.stack);
 
     // Fallback to default Claude models if OpenCode API fails
     const defaultModels = [
