@@ -84,65 +84,25 @@ router.post('/', async (req, res) => {
     });
     console.log('✅ Database session created:', session.id);
 
-    // Build system prompt and initial message
+    // Build and inject system prompt
     console.log('📝 Building system prompt...');
     const systemPrompt = workflow.buildSystemPrompt(inputs || {});
     console.log('✅ System prompt built (length:', systemPrompt.length, 'chars)');
 
-    // Send initial message if workflow defines one
-    // Combine system prompt with initial message so Claude has context
-    if (workflow.initialMessage) {
-      console.log('📨 Workflow has initialMessage - preparing to send...');
-      const initialMsg = workflow.initialMessage(inputs || {});
-      console.log('📝 Initial message:', initialMsg.substring(0, 100) + '...');
+    // Determine if we should trigger an immediate response
+    const shouldTriggerResponse = workflow.initialMessage !== undefined;
+    console.log('🎯 Should trigger response:', shouldTriggerResponse);
 
-      // Combine system instructions with user message
-      const combinedMessage = `<system_context>
-${systemPrompt}
-</system_context>
-
-${initialMsg}`;
-      console.log('📦 Combined message prepared (length:', combinedMessage.length, 'chars)');
-
-      // Store the user message in our database (without system context)
-      console.log('💾 Storing user message in database...');
-      db.createMessage({
-        sessionId: session.id,
-        role: 'user',
-        content: initialMsg,
-        timestamp: new Date().toISOString(),
-      });
-      console.log('✅ User message stored');
-
-      // Send combined message to OpenCode to trigger agent response
-      // Note: We don't await this - let it happen in background
-      // The socket handler will pick up the response via events
-      console.log('🚀 Sending combined message to OpenCode (async)...');
-      client.session.prompt({
-        path: { id: opcodeSession.data.id },
-        body: {
-          parts: [
-            { type: 'text', text: combinedMessage }
-          ],
-        },
-      }).then(() => {
-        console.log('✅ Initial message sent successfully to OpenCode');
-      }).catch((error) => {
-        console.error('❌ Failed to send initial message:', error);
-      });
-      console.log('⏳ Initial message sent (async - not waiting for response)');
-    } else {
-      console.log('⚠️ No initialMessage defined - using promptAsync with noReply');
-      // No initial message - just inject system prompt
-      await client.session.promptAsync({
-        path: { id: opcodeSession.data.id },
-        body: {
-          parts: [{ type: 'text', text: systemPrompt }],
-          noReply: true,
-        },
-      });
-      console.log('✅ System prompt injected');
-    }
+    // Inject system prompt into the session
+    console.log('💉 Injecting system prompt...');
+    await client.session.promptAsync({
+      path: { id: opcodeSession.data.id },
+      body: {
+        parts: [{ type: 'text', text: systemPrompt }],
+        noReply: !shouldTriggerResponse, // If noReply=false, OpenCode will trigger a response
+      },
+    });
+    console.log('✅ System prompt injected');
 
     // Log initial activity
     console.log('📊 Creating initial activity log...');
