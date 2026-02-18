@@ -45,6 +45,19 @@ async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opc
 
     for await (const event of events.stream) {
       const eventData = event as any;
+
+      // CRITICAL: Filter events by OpenCode session ID
+      // Events contain sessionID in various places, extract it
+      const eventSessionId =
+        eventData.properties?.part?.sessionID ||
+        eventData.properties?.sessionID ||
+        eventData.sessionID;
+
+      // Skip events from other sessions
+      if (eventSessionId && eventSessionId !== opcodeSessionId) {
+        continue;
+      }
+
       console.log(`📨 [${sessionId}] Event:`, eventData.type);
 
       // Handle text streaming
