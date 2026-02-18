@@ -9,12 +9,101 @@ interface ChatMessage {
   content: string;
 }
 
+// Track active event subscriptions to avoid duplicates
+const activeSubscriptions = new Set<string>();
+
+// Subscribe to OpenCode events for a session (without sending a new prompt)
+async function subscribeToSessionEvents(io: SocketServer, sessionId: string, opcodeSessionId: string) {
+  // Prevent duplicate subscriptions
+  if (activeSubscriptions.has(sessionId)) {
+    console.log(`⏭️  Already subscribed to session: ${sessionId}`);
+    return;
+  }
+
+  activeSubscriptions.add(sessionId);
+  console.log(`👂 Subscribing to OpenCode events for session: ${sessionId}`);
+
+  try {
+    const client = opcodeManager.getClient();
+    const events = await client.event.subscribe();
+
+    // Find or create an assistant message for streaming
+    let messages = db.getMessages(sessionId);
+    let assistantMessage = messages.find(m => m.role === 'assistant' && !m.content);
+
+    if (!assistantMessage) {
+      assistantMessage = db.createMessage({
+        sessionId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toISOString(),
+      });
+      io.to(sessionId).emit('message', assistantMessage);
+    }
+
+    let streamedContent = assistantMessage.content || '';
+
+    for await (const event of events.stream) {
+      const eventData = event as any;
+      console.log(`📨 [${sessionId}] Event:`, eventData.type);
+
+      // Handle text streaming
+      if (eventData.type === 'message.part.delta') {
+        const props = eventData.properties || eventData;
+        if (props.field === 'text' && props.delta) {
+          streamedContent += props.delta;
+          db.updateMessage(assistantMessage.id, { content: streamedContent });
+
+          io.to(sessionId).emit('message_update', {
+            messageId: assistantMessage.id,
+            content: streamedContent,
+            isComplete: false,
+          });
+        }
+      }
+      // Handle tool usage
+      else if (eventData.type === 'message.part.updated') {
+        const props = eventData.properties || eventData;
+        const part = props.part;
+        if (part?.type === 'tool' && part.tool) {
+          const toolName = part.tool;
+          const status = part.state?.status;
+
+          if (status === 'running' || status === 'pending') {
+            const toolActivity = db.createActivity({
+              sessionId,
+              type: 'tool_use',
+              description: `Using tool: ${toolName}`,
+              timestamp: new Date().toISOString(),
+              data: part,
+            });
+            io.to(sessionId).emit('activity', toolActivity);
+          }
+        }
+      }
+      // Check for session idle
+      else if (eventData.type === 'session.status' || eventData.type === 'session.idle') {
+        const status = eventData.properties?.status?.type || eventData.status?.type;
+        if (status === 'idle' || eventData.type === 'session.idle') {
+          console.log(`✅ [${sessionId}] Session idle - stopping event subscription`);
+          break;
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`❌ [${sessionId}] Event subscription error:`, error);
+  } finally {
+    activeSubscriptions.delete(sessionId);
+    console.log(`🔇 [${sessionId}] Event subscription ended`);
+  }
+}
+
 export function setupSocketHandlers(io: SocketServer) {
   io.on('connection', (socket: Socket) => {
     console.log(`🔌 Client connected: ${socket.id}`);
 
     // Join session room
-    socket.on('join_session', (sessionId: string) => {
+    socket.on('join_session', async (sessionId: string) => {
       socket.join(sessionId);
       console.log(`📥 Client ${socket.id} joined session: ${sessionId}`);
 
@@ -26,6 +115,16 @@ export function setupSocketHandlers(io: SocketServer) {
         messages,
         activities,
       });
+
+      // Start listening for OpenCode events if session has an active OpenCode session
+      const session = db.getSession(sessionId);
+      if (session?.metadata?.opcodeSessionId) {
+        console.log(`👂 Starting to listen for OpenCode events on session: ${session.metadata.opcodeSessionId}`);
+        // Start background event listener for this session
+        subscribeToSessionEvents(io, sessionId, session.metadata.opcodeSessionId).catch(err => {
+          console.error(`❌ Failed to subscribe to session events:`, err);
+        });
+      }
     });
 
     // Handle chat messages
