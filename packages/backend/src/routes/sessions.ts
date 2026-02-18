@@ -36,8 +36,8 @@ router.get('/:id', (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('\n🎬 ========== STARTING SESSION CREATION ==========');
-    const { workflowId, inputs, customTitle } = req.body;
-    console.log('📋 Request body:', { workflowId, inputs: inputs ? 'provided' : 'none', customTitle });
+    const { workflowId, inputs, customTitle, model } = req.body;
+    console.log('📋 Request body:', { workflowId, inputs: inputs ? 'provided' : 'none', customTitle, model });
 
     if (!workflowId) {
       console.log('❌ Missing workflowId');
@@ -57,10 +57,14 @@ router.post('/', async (req, res) => {
 
     // Create OpenCode session
     console.log('🔧 Creating OpenCode session...');
+    const selectedModel = model || 'claude-sonnet-4-5'; // Default to Sonnet
+    console.log('🤖 Using model:', selectedModel);
+
     const client = opcodeManager.getClient();
     const opcodeSession = await client.session.create({
       body: {
         title: `${sessionTitle} - ${new Date().toLocaleString()}`,
+        model: selectedModel,
       },
     });
 
@@ -80,6 +84,7 @@ router.post('/', async (req, res) => {
       metadata: {
         opcodeSessionId: opcodeSession.data.id,
         inputs,
+        model: selectedModel,
       },
     });
     console.log('✅ Database session created:', session.id);

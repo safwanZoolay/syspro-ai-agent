@@ -32,14 +32,15 @@ export async function fetchSession(id: string): Promise<Session> {
 export async function createSession(
   workflowId: string,
   inputs: Record<string, any>,
-  customTitle?: string
+  customTitle?: string,
+  model?: string
 ): Promise<Session> {
   const response = await fetch(`${API_URL}/sessions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ workflowId, inputs, customTitle }),
+    body: JSON.stringify({ workflowId, inputs, customTitle, model }),
   });
 
   if (!response.ok) {

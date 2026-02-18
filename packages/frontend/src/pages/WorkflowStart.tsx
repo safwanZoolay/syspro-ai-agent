@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { fetchWorkflows, createSession } from '@/lib/api';
 import type { Workflow } from '@opencode-web-ui/shared';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 
 export function WorkflowStart() {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [inputs, setInputs] = useState<Record<string, any>>({});
+  const [model, setModel] = useState<string>('claude-sonnet-4-5');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export function WorkflowStart() {
         customTitle = `Coverage Hunter - ${inputs.businessObject}`;
       }
 
-      const session = await createSession(workflow.id, inputs, customTitle);
+      const session = await createSession(workflow.id, inputs, customTitle, model);
       navigate(`/chat/${session.id}`);
     } catch (error) {
       console.error('Failed to create session:', error);
@@ -111,6 +112,26 @@ export function WorkflowStart() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Model Selector */}
+            <div className="mb-6 p-4 bg-secondary/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold">Claude Model</label>
+              </div>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                <option value="claude-sonnet-4-5">Claude 4.5 Sonnet (Recommended - Balanced)</option>
+                <option value="claude-opus-4-6">Claude 4.6 Opus (Most Powerful)</option>
+                <option value="claude-haiku-4-5">Claude 4.5 Haiku (Fastest & Cheapest)</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-2">
+                Choose the model based on your needs: Opus for complex tasks, Sonnet for balance, Haiku for speed
+              </p>
+            </div>
+
             {workflow.inputs && workflow.inputs.length > 0 ? (
               <div className="space-y-4">
                 {workflow.inputs.map((input) => (
