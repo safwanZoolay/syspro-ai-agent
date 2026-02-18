@@ -195,12 +195,22 @@ export function setupSocketHandlers(io: SocketServer) {
           body: {
             parts: [{ type: 'text', text: content }],
           },
+        }).then((response) => {
+          console.log('✅ Prompt API call completed');
+          console.log('📝 Response data:', JSON.stringify(response, null, 2));
+          return response;
+        }).catch((error) => {
+          console.error('❌ Prompt API call failed:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          throw error;
         });
 
         // Wait for both to complete
+        console.log('⏳ Waiting for events and prompt response...');
         const [, response] = await Promise.all([eventPromise, promptPromise]);
 
         console.log('✅ Got final response');
+        console.log('📊 Final response structure:', Object.keys(response || {}));
 
         // If we didn't get content from streaming, extract from response
         if (!streamedContent) {
