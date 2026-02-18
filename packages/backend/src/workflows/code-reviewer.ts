@@ -8,48 +8,26 @@ export const codeReviewerWorkflow: WorkflowHandler = {
 
   inputs: [
     {
-      name: 'filePath',
-      label: 'File or Directory Path',
+      name: 'businessObject',
+      label: 'Business Object Name',
       type: 'text',
       required: true,
-      placeholder: 'e.g., src/components/UserAuth.tsx',
-    },
-    {
-      name: 'reviewFocus',
-      label: 'Review Focus',
-      type: 'select',
-      required: false,
-      placeholder: 'Select focus area',
-      options: [
-        'General Review',
-        'Security',
-        'Performance',
-        'Code Quality',
-        'Best Practices',
-      ],
-    },
-    {
-      name: 'additionalContext',
-      label: 'Additional Context',
-      type: 'textarea',
-      required: false,
-      placeholder: 'Any specific concerns or areas to focus on...',
+      placeholder: 'INVQRY',
     },
   ],
 
   buildSystemPrompt: (inputs) => {
-    const focus = inputs.reviewFocus || 'General Review';
-    const context = inputs.additionalContext || 'None provided';
+    const businessObject = inputs.businessObject;
+    const filePath = `C:\\RND900\\SOURCE\\${businessObject}.CBL`;
 
     return `You are performing a code review.
 
-**File/Directory:** ${inputs.filePath}
-**Review Focus:** ${focus}
-**Additional Context:** ${context}
+**Business Object:** ${businessObject}
+**File Path:** ${filePath}
 
 Instructions:
 1. Use the code-reviewer skill to analyze the code
-2. Read the specified file(s) and understand the implementation
+2. Read the specified file and understand the implementation
 3. Provide a comprehensive review covering:
    - Code quality and readability
    - Potential bugs or issues
@@ -60,7 +38,7 @@ Instructions:
 4. Ask clarifying questions if needed
 5. Be constructive and specific in your feedback
 
-Start by reading the file(s) and then provide your review.`;
+Start by reading the file and then provide your review.`;
   },
 
   skillName: 'code-reviewer',

@@ -31,14 +31,15 @@ export async function fetchSession(id: string): Promise<Session> {
 
 export async function createSession(
   workflowId: string,
-  inputs: Record<string, any>
+  inputs: Record<string, any>,
+  customTitle?: string
 ): Promise<Session> {
   const response = await fetch(`${API_URL}/sessions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ workflowId, inputs }),
+    body: JSON.stringify({ workflowId, inputs, customTitle }),
   });
 
   if (!response.ok) {
@@ -47,6 +48,26 @@ export async function createSession(
 
   const data = await response.json();
   return data.session;
+}
+
+export async function sendChatMessage(
+  sessionId: string,
+  content: string
+): Promise<void> {
+  // This function is used for sending messages via REST API
+  // The actual implementation will use Socket.IO in the chat component
+  // This is just for initial auto-messages
+  const response = await fetch(`${API_URL}/sessions/${sessionId}/message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send message');
+  }
 }
 
 export async function deleteSession(id: string): Promise<void> {

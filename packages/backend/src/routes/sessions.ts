@@ -35,7 +35,7 @@ router.get('/:id', (req, res) => {
 // Create a new session
 router.post('/', async (req, res) => {
   try {
-    const { workflowId, inputs } = req.body;
+    const { workflowId, inputs, customTitle } = req.body;
 
     if (!workflowId) {
       return res.status(400).json({ error: 'workflowId is required' });
@@ -46,11 +46,14 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Workflow not found' });
     }
 
+    // Use custom title if provided, otherwise use default
+    const sessionTitle = customTitle || workflow.name;
+
     // Create OpenCode session
     const client = opcodeManager.getClient();
     const opcodeSession = await client.session.create({
       body: {
-        title: `${workflow.name} - ${new Date().toLocaleString()}`,
+        title: `${sessionTitle} - ${new Date().toLocaleString()}`,
       },
     });
 
@@ -60,18 +63,22 @@ router.post('/', async (req, res) => {
 
     // Build and inject system prompt
     const systemPrompt = workflow.buildSystemPrompt(inputs || {});
+
+    // For code-reviewer workflow, trigger immediate response
+    const shouldTriggerResponse = workflowId === 'code-reviewer';
+
     await client.session.promptAsync({
       path: { id: opcodeSession.data.id },
       body: {
         parts: [{ type: 'text', text: systemPrompt }],
-        noReply: true, // Don't trigger agent response yet
+        noReply: !shouldTriggerResponse, // Trigger response for code-reviewer
       },
     });
 
     // Create session in our database
     const session = db.createSession({
       workflowId,
-      title: workflow.name,
+      title: sessionTitle,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: 'active',

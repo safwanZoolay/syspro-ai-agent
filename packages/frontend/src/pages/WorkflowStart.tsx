@@ -52,7 +52,13 @@ export function WorkflowStart() {
 
     setLoading(true);
     try {
-      const session = await createSession(workflow.id, inputs);
+      // Build custom title for code-reviewer workflow
+      let customTitle: string | undefined;
+      if (workflow.id === 'code-reviewer' && inputs.businessObject) {
+        customTitle = `Code review - ${inputs.businessObject}`;
+      }
+
+      const session = await createSession(workflow.id, inputs, customTitle);
       navigate(`/chat/${session.id}`);
     } catch (error) {
       console.error('Failed to create session:', error);
